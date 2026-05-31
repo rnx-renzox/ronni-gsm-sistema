@@ -1276,19 +1276,11 @@ function saveClientes(arr) {
   if (DB_MODE === 'cloud') {
     _cache = arr;
     updateBadges();
-    // Técnico solo guarda sus propias fichas
     const aGuardar = (_currentUser && _currentUser.rol === 'tecnico')
       ? arr.filter(c => (c.tecnico||'').toLowerCase() === _currentUser.nombre.toLowerCase())
       : arr;
     Promise.all(aGuardar.map(c => saveClienteNube(c)))
-      .then(() => {
-        // Recargar desde Drive para confirmar
-        fetchClientesNube().then(data => {
-          _cache = data;
-          updateBadges();
-          refreshDash();
-        }).catch(()=>{});
-      })
+      .then(() => toast('✓ Guardado en Drive', 'ok'))
       .catch(e => toast('Error nube: ' + e.message, 'err'));
   } else {
     saveClientesLocal(arr);
@@ -1663,7 +1655,7 @@ async function guardarFicha() {
     }
   } else {
     const id = await nextId();
-    c.unshift({id, nombre,
+    const nueva = {id, nombre,
       telefono: document.getElementById('m-telefono').value.trim(),
       equipo:   document.getElementById('m-equipo').value.trim(),
       modelo:   document.getElementById('m-modelo').value.trim(),
@@ -1672,10 +1664,19 @@ async function guardarFicha() {
       estado:   document.getElementById('m-estado').value,
       tipoCliente: tipo, negocio, pdvId,
       fecha:today(), hora:hora(), imei:'', color:'', accesorios:'', pin:'',
-      tecnico:'', servicio:'', adelanto:'0', fisico:'Bueno'
-    });
-    saveClientes(c);
-    toast('Registrado: ' + id, 'ok');
+      tecnico: (_currentUser&&_currentUser.rol==='tecnico') ? _currentUser.nombre : '',
+      servicio:'', adelanto:'0', fisico:'Bueno'
+    };
+    if (DB_MODE === 'cloud') {
+      try {
+        await saveClienteNube(nueva);
+        _cache = await fetchClientesNube();
+        toast('Registrado: ' + id, 'ok');
+      } catch(e) { toast('Error al guardar: '+e.message, 'err'); }
+    } else {
+      c.unshift(nueva); saveClientes(c);
+      toast('Registrado: ' + id, 'ok');
+    }
   }
   closeModal('nueva');
   renderClientes();
@@ -1863,9 +1864,19 @@ async function guardarIngreso() {
     tipoCliente:'cliente', negocio:'', pdvId:'',
     fecha:today(), hora:hora()
   };
-  const c = getClientes(); c.unshift(nuevo); saveClientes(c);
-  toast('Equipo internado: '+id, 'ok');
-  limpiarIngreso(); refreshDash();
+  // Si modo cloud, guardar directamente en Drive y luego recargar
+  if (DB_MODE === 'cloud') {
+    try {
+      await saveClienteNube(nuevo);
+      _cache = await fetchClientesNube();
+      toast('Equipo internado: '+id, 'ok');
+      limpiarIngreso(); refreshDash(); renderClientes();
+    } catch(e) { toast('Error al guardar: '+e.message, 'err'); }
+  } else {
+    const c = getClientes(); c.unshift(nuevo); saveClientes(c);
+    toast('Equipo internado: '+id, 'ok');
+    limpiarIngreso(); refreshDash();
+  }
 }
 function limpiarIngreso() {
   ['in-nombre','in-telefono','in-dni','in-modelo','in-imei','in-accesorios','in-pin','in-problema','in-tecnico','in-precio','in-adelanto'].forEach(f=>{
