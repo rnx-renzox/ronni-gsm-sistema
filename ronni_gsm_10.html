@@ -1,0 +1,3074 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ronni GSM - Taller Pro</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00e5ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ronni GSM">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-startup-image" href="icon-512.png">
+<meta name="msapplication-TileColor" content="#0a0a0f">
+<meta name="msapplication-TileImage" content="icon-192.png">
+<meta name="description" content="Sistema de gestión para taller de reparación de celulares">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+:root{
+  --bg:#0a0a0f;--surface:#111118;--surface2:#1a1a26;--surface3:#22223a;
+  --border:#2a2a40;--border2:#3a3a58;
+  --cyan:#00e5ff;--cyan2:#00b4cc;--cyan-dim:#004a55;
+  --amber:#ffb300;--amber-dim:#3a2800;
+  --green:#00e676;--green-dim:#003320;
+  --red:#ff4444;--red-dim:#3a0000;
+  --purple:#b388ff;--purple-dim:#2a1a4a;
+  --orange:#ff9100;--orange-dim:#3a1a00;
+  --text:#e8e8f0;--text2:#8888aa;--text3:#4a4a6a;
+  --topbar-h:52px;--sidebar-w:200px;
+  --radius:10px;--radius-lg:14px;
+  --font:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.4}
+.app{display:grid;grid-template-rows:var(--topbar-h) 1fr;grid-template-columns:var(--sidebar-w) 1fr;height:100vh;width:100vw;overflow:hidden}
+.topbar{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px;z-index:100;height:var(--topbar-h)}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:12px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;overflow-x:hidden}
+.main{overflow-y:auto;overflow-x:hidden;padding:16px;display:flex;flex-direction:column}
+.logo{font-size:15px;font-weight:700;color:var(--cyan);letter-spacing:-.5px;font-family:var(--mono);white-space:nowrap}
+.logo span{color:var(--text2);font-weight:400}
+.topbar-spacer{flex:1}
+.db-toggle{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 6px 3px 10px;font-size:11px;color:var(--text2);cursor:pointer;transition:.2s}
+.db-pill{background:var(--surface3);border:1px solid var(--border2);border-radius:12px;padding:2px 8px;font-size:10px;font-weight:600;cursor:pointer}
+.db-pill.local{color:var(--amber);border-color:var(--amber-dim)}.db-pill.cloud{color:var(--cyan);border-color:var(--cyan-dim)}
+.db-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.topbar-btn{background:var(--cyan);color:#000;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);transition:.15s;white-space:nowrap}
+.topbar-btn:hover{background:var(--cyan2)}
+.nav-section{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:6px 8px 3px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;color:var(--text2);font-size:12px;font-weight:500;transition:.15s;border:1px solid transparent;user-select:none}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--cyan-dim);color:var(--cyan);border-color:rgba(0,229,255,.15)}
+.nav-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.nav-item.active .nav-icon{background:rgba(0,229,255,.1)}
+.nav-badge{margin-left:auto;background:var(--cyan-dim);color:var(--cyan);border-radius:10px;padding:1px 6px;font-size:9px;font-weight:700}
+.panel{display:none;flex-direction:column;height:100%}
+.panel.active{display:flex}
+.panel-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-shrink:0}
+.panel-title{font-size:17px;font-weight:700;letter-spacing:-.5px}
+.panel-sub{font-size:12px;color:var(--text2);margin-top:1px}
+.panel-actions{margin-left:auto;display:flex;gap:6px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;flex-shrink:0}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.stat-card::after{content:'→';position:absolute;right:10px;bottom:8px;font-size:11px;opacity:.3}
+.stat-card:hover::after{opacity:.7}
+.stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:4px}
+.stat-value{font-size:22px;font-weight:700;font-family:var(--mono)}
+.stat-sub{font-size:10px;color:var(--text2);margin-top:2px}
+.stat-card.cyan .stat-value{color:var(--cyan)}.stat-card.amber .stat-value{color:var(--amber)}
+.stat-card.green .stat-value{color:var(--green)}.stat-card.purple .stat-value{color:var(--purple)}.stat-card.red .stat-value{color:var(--red)}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.table-top{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.table-scroll{overflow-y:auto;flex:1}
+.search-box{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);font-family:var(--font);font-size:12px;flex:1;outline:none;transition:.2s}
+.search-box:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,229,255,.1)}
+.filter-select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text2);font-family:var(--font);font-size:11px;outline:none;cursor:pointer}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface2);position:sticky;top:0;z-index:2}
+th{padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
+tbody tr{border-top:1px solid var(--border);transition:.1s;cursor:pointer}
+tbody tr:hover{background:var(--surface2)}
+td{padding:9px 12px;font-size:12px;vertical-align:middle}
+.id-chip{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--cyan);background:var(--cyan-dim);padding:2px 6px;border-radius:4px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.badge::before{content:'';width:4px;height:4px;border-radius:50%;background:currentColor}
+.badge.pendiente{color:var(--amber);background:var(--amber-dim)}.badge.proceso{color:#00b4ff;background:#001a3a}
+.badge.listo{color:var(--green);background:var(--green-dim)}.badge.entregado{color:var(--text2);background:var(--surface3)}
+.badge.cancelado{color:var(--red);background:var(--red-dim)}
+.badge.garantia{color:var(--purple);background:var(--purple-dim)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid transparent;font-family:var(--font);transition:.15s;white-space:nowrap}
+.btn-primary{background:var(--cyan);color:#000;border-color:var(--cyan)}.btn-primary:hover{background:#00ccee}
+.btn-ghost{background:transparent;color:var(--text2);border-color:var(--border)}.btn-ghost:hover{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+.btn-danger{background:transparent;color:var(--red);border-color:rgba(255,68,68,.3)}.btn-danger:hover{background:var(--red-dim)}
+.btn-amber{background:transparent;color:var(--amber);border-color:rgba(255,179,0,.3)}.btn-amber:hover{background:var(--amber-dim)}
+.btn-purple{background:transparent;color:var(--purple);border-color:rgba(179,136,255,.3)}.btn-purple:hover{background:var(--purple-dim)}
+.btn-sm{padding:4px 9px;font-size:11px}.btn-icon{padding:5px;min-width:28px;justify-content:center}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);width:540px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.6)}
+.modal-header{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:15px;font-weight:700}
+.modal-close{margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:16px;transition:.15s;line-height:1}
+.modal-close:hover{background:var(--surface3);color:var(--text)}
+.modal-body{padding:20px}.modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--border)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:4px}.form-group.full{grid-column:1/-1}
+label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:12px;outline:none;transition:.2s;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,229,255,.1)}
+textarea{resize:vertical;min-height:60px}
+select option{background:var(--surface2)}
+.intake-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px}
+.intake-card-title{font-size:11px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.intake-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.intake-grid.three{grid-template-columns:1fr 1fr 1fr}
+.internado-banner{background:linear-gradient(135deg,var(--amber-dim),var(--surface2));border:1px solid var(--amber);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;font-size:12px;flex-shrink:0}
+.internado-banner strong{color:var(--amber)}
+.rep-tabs{display:flex;gap:6px;margin-bottom:12px;flex-shrink:0}
+.rep-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);color:var(--text2);background:var(--surface);transition:.15s;user-select:none}
+.rep-tab:hover{background:var(--surface2);color:var(--text)}
+.rep-tab.active{background:var(--cyan-dim);color:var(--cyan);border-color:rgba(0,229,255,.25)}
+.rep-content{display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden}
+.rep-content.active{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.rep-content .table-scroll{overflow-y:auto;flex:1}
+.report-bar-wrap{padding:5px 0}
+.report-bar-label{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
+.report-bar{height:7px;border-radius:4px;background:var(--surface3);overflow:hidden}
+.report-bar-fill{height:100%;border-radius:4px;transition:.4s}
+.printer-preview{background:#fff;color:#000;border-radius:8px;padding:14px;font-family:'Courier New',monospace;font-size:11px;line-height:1.5;white-space:pre;overflow-x:auto;border:2px dashed var(--border2)}
+.qr-ticket-wrap{margin-top:12px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:14px}
+.qr-ticket-box{background:#fff;border-radius:6px;padding:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;width:72px;height:72px}
+.qr-ticket-box canvas,.qr-ticket-box img{width:64px!important;height:64px!important;display:block}
+.qr-ticket-info{flex:1}
+.qr-ticket-info p{font-size:11px;color:var(--text2);margin-bottom:4px;line-height:1.4}
+.qr-ticket-info a{font-size:10px;color:var(--cyan);word-break:break-all;text-decoration:none;font-family:var(--mono)}
+.qr-modal-wrap{margin-top:10px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;display:flex;align-items:center;gap:10px}
+.qr-modal-box{background:#fff;border-radius:5px;padding:3px;flex-shrink:0;width:60px;height:60px;display:flex;align-items:center;justify-content:center}
+.qr-modal-box canvas,.qr-modal-box img{width:54px!important;height:54px!important;display:block}
+.qr-modal-info{flex:1}
+.qr-modal-info strong{font-size:11px;color:var(--cyan);display:block;margin-bottom:2px}
+.qr-modal-info span{font-size:10px;color:var(--text2);line-height:1.4}
+.db-config-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px}
+.db-option{display:flex;align-items:flex-start;gap:10px;padding:12px;border:2px solid var(--border);border-radius:9px;cursor:pointer;transition:.2s;margin-bottom:8px}
+.db-option:hover{border-color:var(--border2)}.db-option.selected{border-color:var(--cyan);background:rgba(0,229,255,.04)}
+.db-option input[type=radio]{margin-top:2px;accent-color:var(--cyan)}
+.db-option-info strong{display:block;font-size:12px;font-weight:600;margin-bottom:2px}
+.db-option-info span{font-size:11px;color:var(--text2)}
+.db-status-dot{width:9px;height:9px;border-radius:50%;margin-top:3px;flex-shrink:0}
+.db-status-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}.db-status-dot.warn{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.section-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px}
+.section-wrap-title{font-size:11px;font-weight:700;margin-bottom:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px}
+.toggle-wrap{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text2)}
+.toggle{position:relative;width:34px;height:18px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-track{position:absolute;inset:0;background:var(--surface3);border-radius:10px;transition:.2s;border:1px solid var(--border2)}
+.toggle input:checked+.toggle-track{background:var(--cyan-dim);border-color:var(--cyan)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:var(--text3);transition:.2s}
+.toggle input:checked~.toggle-thumb{left:17px;background:var(--cyan)}
+.resumen-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.2s}
+.resumen-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.resumen-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.resumen-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px}
+.resumen-val{font-size:18px;font-weight:700;font-family:var(--mono)}
+.resumen-sub{font-size:10px;color:var(--text2);margin-top:1px}
+.toast-wrap{position:fixed;bottom:16px;right:16px;display:flex;flex-direction:column;gap:6px;z-index:2000}
+.toast{background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:slideIn .2s ease}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.ok{border-left:3px solid var(--green)}.toast.err{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--cyan)}
+.row-actions{display:flex;gap:3px;opacity:0;transition:.15s}
+tr:hover .row-actions{opacity:1}
+tr.st-pendiente td:first-child{border-left:3px solid var(--amber)}
+tr.st-proceso td:first-child{border-left:3px solid #00b4ff}
+tr.st-listo td:first-child{border-left:3px solid var(--green)}
+tr.st-entregado td:first-child{border-left:3px solid var(--text3)}
+tr.st-cancelado td:first-child{border-left:3px solid var(--red)}
+tr.st-garantia td:first-child{border-left:3px solid var(--purple)}
+/* tipo selector */
+.tipo-sel{display:flex;gap:8px;margin-bottom:14px}
+.tipo-btn{flex:1;padding:8px 0;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;text-align:center;transition:.15s;border:1.5px solid var(--border);color:var(--text2);background:transparent;user-select:none}
+.tipo-btn.active-cli{border-color:var(--cyan);background:var(--cyan-dim);color:var(--cyan)}
+.tipo-btn.active-pdv{border-color:var(--orange);background:var(--orange-dim);color:var(--orange)}
+/* ── BOTTOM NAV MOBILE ── */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:56px;background:var(--surface);border-top:1px solid var(--border);z-index:200;grid-template-columns:repeat(6,1fr)}
+.bottom-nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--text3);font-size:9px;font-weight:600;padding:6px 2px;transition:.15s;position:relative;user-select:none;-webkit-tap-highlight-color:transparent}
+.bottom-nav-item.active{color:var(--cyan)}
+.bottom-nav-item .bn-icon{font-size:20px;line-height:1}
+.bottom-nav-item .bn-badge{position:absolute;top:4px;right:50%;margin-right:-18px;background:var(--cyan);color:#000;border-radius:8px;padding:0 4px;font-size:8px;font-weight:800;min-width:14px;text-align:center}
+/* ── TABLET (860px) ── */
+@media(max-width:860px){
+  :root{--sidebar-w:56px;--bottom-nav-h:0px}
+  .nav-item span{display:none}.nav-section{display:none}.nav-badge{display:none}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .form-grid,.intake-grid{grid-template-columns:1fr}
+  .intake-grid.three{grid-template-columns:1fr 1fr}
+}
+/* ── MOBILE (600px) ── */
+@media(max-width:600px){
+  :root{--sidebar-w:0px;--topbar-h:48px;--bottom-nav-h:56px}
+  html,body{overflow:hidden}
+  .app{grid-template-columns:1fr;grid-template-rows:var(--topbar-h) 1fr}
+  .sidebar{display:none}
+  .main{padding:10px 10px calc(var(--bottom-nav-h) + 10px) 10px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .bottom-nav{display:grid}
+  /* topbar mobile */
+  .logo{font-size:13px}
+  .topbar{padding:0 10px;gap:8px}
+  #topbar-count{display:none}
+  .db-toggle{padding:3px 6px 3px 8px}
+  /* stats: 2 cols en mobile */
+  .stats-grid{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .stat-card{padding:10px 10px}
+  .stat-value{font-size:18px}
+  .stat-label{font-size:9px}
+  /* dashboard grid: columna unica */
+  #panel-dashboard > div:last-child{grid-template-columns:1fr !important}
+  /* tabla clientes: scroll horizontal */
+  .table-wrap{overflow-x:auto}
+  table{min-width:600px}
+  /* ingreso: columna única */
+  #panel-ingreso > div:last-child{grid-template-columns:1fr !important}
+  /* impresora: columna única */
+  #panel-impresora > div:last-child{grid-template-columns:1fr !important}
+  /* reportes barras: columna única */
+  .rep-content > div:nth-child(2){grid-template-columns:1fr !important}
+  /* form grids */
+  .form-grid,.intake-grid,.intake-grid.three{grid-template-columns:1fr !important}
+  /* modales full screen */
+  .modal{width:100vw !important;max-width:100vw !important;max-height:100vh !important;border-radius:16px 16px 0 0 !important;position:fixed;bottom:0;left:0;top:auto !important;margin:0}
+  .modal-overlay{align-items:flex-end !important}
+  /* panel header */
+  .panel-header{margin-bottom:8px}
+  .panel-title{font-size:15px}
+  /* botones row actions: siempre visibles en mobile */
+  .row-actions{opacity:1 !important}
+  /* rep tabs scroll */
+  .rep-tabs{overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap}
+  .rep-tab{white-space:nowrap;flex-shrink:0}
+  /* intake cards */
+  .intake-card{padding:12px;margin-bottom:8px}
+  /* internado banner */
+  .internado-banner{padding:8px 10px;font-size:11px}
+  /* section wrap */
+  .section-wrap{padding:10px}
+  /* toast position */
+  .toast-wrap{bottom:calc(var(--bottom-nav-h) + 8px);right:8px;left:8px}
+  .toast{font-size:11px}
+  /* tipo selector */
+  .tipo-sel{gap:6px}
+  .tipo-btn{font-size:11px;padding:7px 0}
+}
+/* ── SMALL MOBILE (380px) ── */
+@media(max-width:380px){
+  .stats-grid{grid-template-columns:1fr 1fr;gap:6px}
+  .stat-value{font-size:16px}
+  .rep-tab{padding:5px 10px;font-size:11px}
+  .btn{padding:5px 9px;font-size:11px}
+}
+/* ── LOGIN ── */
+#login-overlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
+.login-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:36px 32px;width:100%;max-width:380px;box-shadow:0 24px 64px rgba(0,0,0,.6)}
+.login-logo{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--cyan);letter-spacing:-.5px;margin-bottom:4px}
+.login-logo span{color:var(--text3)}
+.login-sub{font-size:12px;color:var(--text3);margin-bottom:28px}
+.login-field{margin-bottom:14px}
+.login-field label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px}
+.login-field input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:11px 14px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;transition:.15s;box-sizing:border-box}
+.login-field input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,229,255,.08)}
+.login-btn{width:100%;background:var(--cyan);color:#000;border:none;border-radius:10px;padding:13px;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;transition:.15s}
+.login-btn:hover{background:var(--cyan2)}.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-error{background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.3);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--red);margin-bottom:12px;display:none}
+.user-chip{display:flex;align-items:center;gap:8px;padding:8px 6px;border-top:1px solid var(--border);margin-top:6px}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--cyan-dim);border:1.5px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--cyan);flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.user-logout{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px;border-radius:4px;transition:.15s;flex-shrink:0}
+.user-logout:hover{color:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">RONNI<span>·</span>GSM</div>
+    <div class="login-sub">Sistema de Gestión de Servicios</div>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-field">
+      <label>Usuario</label>
+      <input type="text" id="login-user" placeholder="admin / fernando / renzo" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    </div>
+    <div class="login-field">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Ingresar →</button>
+  </div>
+</div>
+
+<!-- MODAL CAMBIAR CONTRASEÑA -->
+<div class="modal-overlay" id="modal-cambiar-pass">
+  <div class="modal" style="width:380px">
+    <div class="modal-header">
+      <span style="font-size:18px">🔐</span>
+      <div class="modal-title">Cambiar Contraseña</div>
+      <div class="modal-close" onclick="closeModal('cambiar-pass')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Contraseña actual</label><input type="password" id="cp-actual" placeholder="••••••••"></div>
+      <div class="form-group"><label>Nueva contraseña</label><input type="password" id="cp-nueva" placeholder="Mínimo 6 caracteres"></div>
+      <div class="form-group"><label>Confirmar nueva</label><input type="password" id="cp-confirm" placeholder="Repite la nueva contraseña"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('cambiar-pass')">Cancelar</button>
+      <button class="btn btn-primary" onclick="cambiarPassword()">🔐 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GESTIÓN USUARIOS (solo admin) -->
+<div class="modal-overlay" id="modal-usuarios">
+  <div class="modal" style="width:480px">
+    <div class="modal-header">
+      <span style="font-size:18px">👥</span>
+      <div class="modal-title">Gestión de Usuarios</div>
+      <div class="modal-close" onclick="closeModal('usuarios')">✕</div>
+    </div>
+    <div class="modal-body" id="usuarios-body">Cargando...</div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('usuarios')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="logo">RONNI<span>·</span>GSM</div>
+  <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
+  <div class="db-toggle" onclick="toggleDB()">
+    <span id="db-label" style="font-size:11px">BD:</span>
+    <span class="db-pill local" id="db-pill">LOCAL</span>
+    <div class="db-dot"></div>
+  </div>
+  <div class="topbar-spacer"></div>
+  <span id="topbar-count" style="font-size:11px;color:var(--text2)"></span>
+  <button class="topbar-btn" onclick="openModal('nueva')">+ Nueva Ficha</button>
+</header>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="nav-section">Principal</div>
+  <div class="nav-item active" id="nav-dashboard" onclick="showPanel('dashboard',this)">
+    <div class="nav-icon">📊</div><span>Dashboard</span>
+  </div>
+  <div class="nav-item" id="nav-clientes" onclick="showPanel('clientes',this)">
+    <div class="nav-icon">👥</div><span>Clientes</span>
+    <span class="nav-badge" id="badge-clientes">0</span>
+  </div>
+  <div class="nav-item" id="nav-ingreso" onclick="showPanel('ingreso',this)">
+    <div class="nav-icon">📲</div><span>Internar Equipo</span>
+  </div>
+  <div class="nav-section">Herramientas</div>
+  <div class="nav-item" id="nav-impresora" onclick="showPanel('impresora',this)">
+    <div class="nav-icon">🖨️</div><span>Impresora</span>
+  </div>
+  <div class="nav-item" id="nav-reportes" onclick="showPanel('reportes',this)">
+    <div class="nav-icon">📋</div><span>Reportes</span>
+  </div>
+  <div style="flex:1"></div>
+  <!-- nav solo admin -->
+  <div class="nav-item admin-only" id="nav-pdvs" onclick="abrirListaPDVs()">
+    <div class="nav-icon">🏪</div><span>PDV</span>
+    <span class="nav-badge" id="badge-pdvs">0</span>
+  </div>
+  <div class="user-chip">
+    <div class="user-avatar" id="sidebar-avatar">?</div>
+    <div class="user-info">
+      <div class="user-name" id="sidebar-nombre">—</div>
+      <div class="user-role" id="sidebar-rol">—</div>
+    </div>
+    <button class="user-logout" title="Opciones" onclick="abrirMenuUsuario()">⚙️</button>
+    <button class="user-logout" title="Cerrar sesión" onclick="logout()" style="color:var(--red);font-size:15px" title="Cerrar sesión">⏻</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ══ DASHBOARD ══ -->
+<div class="panel active" id="panel-dashboard">
+  <div class="panel-header" style="flex-shrink:0">
+    <div>
+      <div class="panel-title">Dashboard</div>
+      <div class="panel-sub" id="dash-fecha"></div>
+    </div>
+    <div class="panel-actions">
+      <button class="btn btn-ghost btn-sm" onclick="refreshDash()">↻ Actualizar</button>
+    </div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card cyan" onclick="irClientes('')">
+      <div class="stat-label">Total Equipos</div>
+      <div class="stat-value" id="s-total">0</div>
+      <div class="stat-sub">registrados</div>
+    </div>
+    <div class="stat-card amber" onclick="irClientes('Pendiente')">
+      <div class="stat-label">Pendientes</div>
+      <div class="stat-value" id="s-pend">0</div>
+      <div class="stat-sub">por atender</div>
+    </div>
+    <div class="stat-card green" onclick="irClientes('Listo')">
+      <div class="stat-label">Listos</div>
+      <div class="stat-value" id="s-listo">0</div>
+      <div class="stat-sub">para entregar</div>
+    </div>
+    <div class="stat-card purple" onclick="abrirReporteIngresos()">
+      <div class="stat-label">Ingresos Est.</div>
+      <div class="stat-value" id="s-ingresos">S/ 0</div>
+      <div class="stat-sub">ver detalle →</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:12px;flex:1;min-height:0">
+    <div class="table-wrap">
+      <div class="table-top">
+        <span style="font-size:12px;font-weight:700">Equipos recientes</span>
+        <div style="margin-left:auto;display:flex;gap:4px">
+          <button class="btn btn-primary btn-sm" id="dash-btn-hoy" onclick="setDashFiltro('hoy')">Hoy</button>
+          <button class="btn btn-ghost btn-sm" id="dash-btn-todos" onclick="setDashFiltro('todos')">Todos</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>ID</th><th>Cliente</th><th>Equipo</th><th>Estado</th><th>Fecha</th></tr></thead>
+          <tbody id="dash-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto">
+      <div class="section-wrap" style="margin-bottom:0;flex:1">
+        <div class="section-wrap-title">Resumen general</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="resumen-card" onclick="irClientes('En proceso')">
+            <div class="resumen-icon" style="background:#001a3a">🔧</div>
+            <div>
+              <div class="resumen-label">En proceso</div>
+              <div class="resumen-val" id="r-proceso" style="color:#00b4ff">0</div>
+              <div class="resumen-sub">equipos en reparación</div>
+            </div>
+          </div>
+          <div class="resumen-card" onclick="irClientes('Entregado')">
+            <div class="resumen-icon" style="background:var(--green-dim)">✅</div>
+            <div>
+              <div class="resumen-label">Entregados</div>
+              <div class="resumen-val" id="r-entregado" style="color:var(--green)">0</div>
+              <div class="resumen-sub">equipos devueltos</div>
+            </div>
+          </div>
+          <div class="resumen-card" onclick="irClientes('Cancelado')">
+            <div class="resumen-icon" style="background:var(--red-dim)">❌</div>
+            <div>
+              <div class="resumen-label">Cancelados</div>
+              <div class="resumen-val" id="r-cancelado" style="color:var(--red)">0</div>
+              <div class="resumen-sub">servicios cancelados</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CLIENTES ══ -->
+<div class="panel" id="panel-clientes">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Administrar Clientes</div>
+      <div class="panel-sub">Gestión completa de fichas</div>
+    </div>
+    <div class="panel-actions">
+      <button class="btn btn-ghost btn-sm" onclick="exportarCSV()">↓ CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('nueva')">+ Nueva Ficha</button>
+    </div>
+  </div>
+  <div class="table-wrap" style="flex:1">
+    <div class="table-top">
+      <input class="search-box" placeholder="🔍  Buscar nombre, ID, equipo, teléfono..." id="search-box" oninput="filtrarClientes()">
+      <select class="filter-select" id="filter-estado" onchange="filtrarClientes()">
+        <option value="">Todos</option>
+        <option>Pendiente</option><option>En proceso</option><option>Listo</option>
+        <option>Entregado</option><option>Garantía</option><option>Cancelado</option>
+      </select>
+      <span style="font-size:11px;color:var(--text2)" id="count-label"></span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Tipo</th><th>Cliente</th><th>Teléfono</th><th>Equipo</th><th>Modelo</th>
+          <th>Estado</th><th>Precio</th><th>Fecha</th><th>Acciones</th>
+        </tr></thead>
+        <tbody id="clientes-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ INTERNAR EQUIPO ══ -->
+<div class="panel" id="panel-ingreso">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Internar Equipo</div>
+      <div class="panel-sub">El cliente deja el equipo para reparación</div>
+    </div>
+  </div>
+  <div class="internado-banner">
+    <span style="font-size:20px">📲</span>
+    <div><strong>Ingreso a taller</strong> — El equipo quedará internado hasta completar la reparación. Se generará un comprobante.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1;overflow-y:auto">
+    <div>
+      <div class="intake-card">
+        <div class="intake-card-title">👤 Cliente</div>
+        <div class="intake-grid">
+          <div class="form-group full"><label>Nombre completo *</label><input type="text" id="in-nombre" placeholder="Juan Pérez García"></div>
+          <div class="form-group"><label>Teléfono *</label><input type="tel" id="in-telefono" placeholder="+51 999 999 999"></div>
+          <div class="form-group"><label>DNI</label><input type="text" id="in-dni" placeholder="12345678"></div>
+        </div>
+      </div>
+      <div class="intake-card">
+        <div class="intake-card-title">📱 Equipo internado</div>
+        <div class="intake-grid">
+          <div class="form-group"><label>Marca *</label>
+            <select id="in-equipo">
+              <option value="">Seleccionar</option>
+              <option>Samsung</option><option>Xiaomi</option><option>iPhone / Apple</option>
+              <option>Huawei</option><option>Motorola</option><option>LG</option>
+              <option>OPPO</option><option>Vivo</option><option>Realme</option>
+              <option>OnePlus</option><option>Nokia</option><option>Otro</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Modelo</label><input type="text" id="in-modelo" placeholder="Galaxy A54, iPhone 13..."></div>
+          <div class="form-group"><label>IMEI (opcional)</label><input type="text" id="in-imei" placeholder="000000000000000" maxlength="15" oninput="validarIMEI(this)" style="font-family:var(--mono);letter-spacing:1px"></div>
+          <div class="form-group"><label>Estado físico</label>
+            <select id="in-fisico">
+              <option>Bueno</option><option>Pantalla rota</option><option>Carcasa dañada</option>
+              <option>Múltiples daños</option><option>Mojado / líquido</option><option>Golpeado</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Accesorios entregados</label><input type="text" id="in-accesorios" placeholder="Cargador, case, caja..."></div>
+          <div class="form-group"><label>PIN / Contraseña</label><input type="text" id="in-pin" placeholder="Dejar vacío si no aplica"></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="intake-card">
+        <div class="intake-card-title">🔧 Servicio solicitado</div>
+        <div class="intake-grid">
+          <div class="form-group full"><label>Falla reportada *</label><textarea id="in-problema" placeholder="Describe el problema..." style="min-height:70px"></textarea></div>
+          <div class="form-group full"><label>Tipo de servicio</label>
+            <select id="in-servicio">
+              <option>Diagnóstico</option><option>Cambio de pantalla</option><option>Cambio de batería</option>
+              <option>Cambio de conector carga</option><option>Reparación de placa</option>
+              <option>Flash / Firmware</option><option>Limpieza por líquido</option>
+              <option>Cambio de cámara</option><option>Formateo / Reset</option><option>Otro</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="intake-card">
+        <div class="intake-card-title">💰 Presupuesto y técnico</div>
+        <div class="intake-grid three">
+          <div class="form-group"><label>Precio est. (S/.)</label><input type="number" id="in-precio" placeholder="0.00" min="0" step="0.50"></div>
+          <div class="form-group"><label>Adelanto (S/.)</label><input type="number" id="in-adelanto" placeholder="0.00" min="0" step="0.50"></div>
+          <div class="form-group"><label>Técnico</label><input type="text" id="in-tecnico" placeholder="Nombre"></div>
+          <div class="form-group"><label>Estado inicial</label>
+            <select id="in-estado"><option>Pendiente</option><option>En proceso</option></select>
+          </div>
+          <div class="form-group"><label>Fecha de entrega</label><input type="date" id="in-entrega"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <button class="btn btn-ghost btn-sm" onclick="limpiarIngreso()">Limpiar</button>
+        <button class="btn btn-purple btn-sm" onclick="previsualizarTicket()">👁 Vista previa</button>
+        <button class="btn btn-primary" onclick="guardarIngreso()">📲 Internar equipo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ IMPRESORA ══ -->
+<div class="panel" id="panel-impresora">
+  <div class="panel-header">
+    <div><div class="panel-title">Impresora Térmica</div><div class="panel-sub">Configuración e impresión de tickets</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;overflow-y:auto">
+    <div>
+      <div class="section-wrap">
+        <div class="section-wrap-title">Configuración</div>
+        <div class="form-group" style="margin-bottom:10px"><label>Conexión</label>
+          <select id="print-tipo" onchange="updatePrintUI()">
+            <option value="usb">USB / Serial</option><option value="red">Red / Wi-Fi</option>
+            <option value="pdf">Guardar como TXT</option>
+          </select>
+        </div>
+        <div id="print-usb-conf">
+          <div class="form-group" style="margin-bottom:8px"><label>Puerto COM</label><input type="text" id="print-port" value="COM3"></div>
+          <div class="form-group" style="margin-bottom:8px"><label>Baud Rate</label>
+            <select id="print-baud"><option>9600</option><option selected>19200</option><option>115200</option></select></div>
+        </div>
+        <div id="print-red-conf" style="display:none">
+          <div class="form-group" style="margin-bottom:8px"><label>IP</label><input type="text" id="print-ip" placeholder="192.168.1.100"></div>
+          <div class="form-group" style="margin-bottom:8px"><label>Puerto</label><input type="text" id="print-netport" value="9100"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="testPrinter()">🔌 Probar</button>
+      </div>
+      <div class="section-wrap">
+        <div class="section-wrap-title">Opciones de ticket</div>
+        <div class="form-group" style="margin-bottom:8px"><label>Ancho de papel</label>
+          <select id="print-ancho"><option value="32">58mm</option><option value="42" selected>80mm</option></select></div>
+        <div class="form-group" style="margin-bottom:8px"><label>Nombre del negocio</label><input type="text" id="print-negocio" value="RONNI GSM"></div>
+        <div class="form-group" style="margin-bottom:8px"><label>Dirección / Teléfono</label><input type="text" id="print-dir" placeholder="Dirección | Tel: 999-999-999"></div>
+        <div class="form-group" style="margin-bottom:8px"><label>Mensaje footer</label><input type="text" id="print-footer" value="¡Gracias por su preferencia!"></div>
+        <div class="toggle-wrap" style="margin-bottom:6px"><label class="toggle"><input type="checkbox" id="opt-logo" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>Mostrar nombre</div>
+        <div class="toggle-wrap" style="margin-bottom:6px"><label class="toggle"><input type="checkbox" id="opt-imei" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>Incluir IMEI</div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="opt-precio" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>Mostrar precio</div>
+      </div>
+    </div>
+    <div>
+      <div class="section-wrap">
+        <div class="section-wrap-title">Seleccionar cliente</div>
+        <input class="search-box" placeholder="Buscar..." id="print-search" oninput="buscarParaImprimir()" style="margin-bottom:8px;width:100%">
+        <select id="print-cliente-sel" size="5" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:4px;font-size:11px;outline:none" onchange="generarPreview()"></select>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="selTipoTicket('ingreso')">Ingreso</button>
+          <button class="btn btn-ghost btn-sm" onclick="selTipoTicket('entrega')">Entrega</button>
+          <button class="btn btn-ghost btn-sm" onclick="selTipoTicket('presupuesto')">Presupuesto</button>
+        </div>
+      </div>
+      <div class="section-wrap">
+        <div class="section-wrap-title">Vista previa</div>
+        <div class="printer-preview" id="print-preview">Selecciona un cliente...</div>
+        <div class="qr-ticket-wrap" id="qr-print-wrap" style="display:none">
+          <div class="qr-ticket-box" id="qr-print-box"></div>
+          <div class="qr-ticket-info">
+            <p>📱 <strong style="color:var(--cyan)">QR Estado en Vivo</strong><br>El cliente escanea este código para ver el estado de su reparación en tiempo real.</p>
+            <a id="qr-print-link" href="#" target="_blank">—</a>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="imprimirTicket()">🖨 Imprimir</button>
+          <button class="btn btn-ghost btn-sm" onclick="generarPreview()">↻ Actualizar</button>
+          <button class="btn btn-ghost btn-sm" onclick="guardarPDF()">↓ Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ REPORTES ══ -->
+<div class="panel" id="panel-reportes" style="overflow:hidden">
+  <div class="panel-header" style="flex-shrink:0">
+    <div><div class="panel-title">Reportes</div><div class="panel-sub">Análisis y estadísticas — Ronni GSM</div></div>
+    <div class="panel-actions" id="rep-export-btns">
+      <button class="btn btn-ghost btn-sm" onclick="exportarRepActivo('txt')">↓ TXT</button>
+      <button class="btn btn-primary btn-sm" onclick="exportarRepActivo('csv')">↓ CSV</button>
+    </div>
+  </div>
+  <!-- Solapas principales -->
+  <div class="rep-tabs" style="flex-shrink:0;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:10px">
+    <div class="rep-tab active" id="rmain-ingresos" onclick="cambiarRepMain('ingresos')">💰 Ingresos</div>
+    <div class="rep-tab" id="rmain-egresos" onclick="cambiarRepMain('egresos')">💸 Egresos</div>
+    <div class="rep-tab" id="rmain-servicios" onclick="cambiarRepMain('servicios')">🔧 Servicios</div>
+    <div class="rep-tab" id="rmain-estado" onclick="cambiarRepMain('estado')">📊 Por estado</div>
+  </div>
+
+  <!-- INGRESOS -->
+  <div id="repmain-ingresos" class="rep-main-section" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden">
+    <div class="rep-tabs" style="flex-shrink:0">
+      <div class="rep-tab active" id="rtab-todos" onclick="cambiarRepTab('todos')">📋 Todos</div>
+      <div class="rep-tab" id="rtab-diario" onclick="cambiarRepTab('diario')">📅 Hoy</div>
+      <div class="rep-tab" id="rtab-semanal" onclick="cambiarRepTab('semanal')">📆 Esta semana</div>
+      <div class="rep-tab" id="rtab-mensual" onclick="cambiarRepTab('mensual')">📊 Este mes</div>
+    </div>
+    <div id="rep-todos" class="rep-content active"></div>
+    <div id="rep-diario" class="rep-content"></div>
+    <div id="rep-semanal" class="rep-content"></div>
+    <div id="rep-mensual" class="rep-content"></div>
+  </div>
+
+  <!-- EGRESOS -->
+  <div id="repmain-egresos" class="rep-main-section" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-shrink:0;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="abrirModalEgreso()">+ Registrar gasto</button>
+      <span style="font-size:11px;color:var(--text2)" id="egr-periodo-label">Todos los gastos</span>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="exportarEgresos()">↓ CSV</button>
+      </div>
+    </div>
+    <!-- Filtros rápidos egresos -->
+    <div class="rep-tabs" style="flex-shrink:0">
+      <div class="rep-tab active" id="etab-todos" onclick="cambiarEgrTab('todos')">📋 Todos</div>
+      <div class="rep-tab" id="etab-diario" onclick="cambiarEgrTab('diario')">📅 Hoy</div>
+      <div class="rep-tab" id="etab-semanal" onclick="cambiarEgrTab('semanal')">📆 Esta semana</div>
+      <div class="rep-tab" id="etab-mensual" onclick="cambiarEgrTab('mensual')">📊 Este mes</div>
+    </div>
+    <div id="egr-content" class="rep-content active" style="display:flex"></div>
+  </div>
+
+  <!-- SERVICIOS -->
+  <div id="repmain-servicios" class="rep-main-section" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden">
+    <div id="rep-servicios-content" style="flex:1;overflow-y:auto"></div>
+  </div>
+
+  <!-- POR ESTADO -->
+  <div id="repmain-estado" class="rep-main-section" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden">
+    <div id="rep-estado-content" style="flex:1;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- MODAL EGRESO -->
+<div class="modal-overlay" id="modal-egreso">
+  <div class="modal" style="width:400px">
+    <div class="modal-header">
+      <span style="font-size:18px">💸</span>
+      <div class="modal-title">Registrar Gasto</div>
+      <div class="modal-close" onclick="closeModal('egreso')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Descripción *</label><input type="text" id="egr-desc" placeholder="Almuerzo, luz, insumos..."></div>
+        <div class="form-group"><label>Monto (S/.) *</label><input type="number" id="egr-monto" placeholder="0.00" min="0" step="0.50" style="font-size:18px;font-weight:700;text-align:center;color:var(--red)"></div>
+        <div class="form-group"><label>Categoría</label>
+          <select id="egr-cat">
+            <option value="alimentacion">🍽️ Alimentación</option>
+            <option value="local">🏠 Local / Alquiler</option>
+            <option value="servicios">💡 Servicios (luz, agua)</option>
+            <option value="insumos">🔩 Insumos / Repuestos</option>
+            <option value="transporte">🚌 Transporte</option>
+            <option value="otro">📌 Otro</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Fecha</label><input type="date" id="egr-fecha"></div>
+        <div class="form-group full"><label>Notas</label><input type="text" id="egr-notas" placeholder="Opcional..."></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('egreso')">Cancelar</button>
+      <button class="btn btn-danger" onclick="guardarEgreso()">💸 Guardar gasto</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ BASE DE DATOS ══ -->
+<div class="panel" id="panel-basedatos">
+  <div class="panel-header">
+    <div><div class="panel-title">Base de Datos</div><div class="panel-sub">Almacenamiento y respaldo</div></div>
+  </div>
+  <div style="overflow-y:auto;flex:1">
+    <div class="db-config-card">
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px">⚙️ Modo de almacenamiento</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:14px">Elige entre local o nube</div>
+      <div class="db-option selected" id="db-opt-local" onclick="setDB('local')">
+        <input type="radio" name="db-mode" checked id="r-local">
+        <div class="db-status-dot ok"></div>
+        <div class="db-option-info"><strong>💾 Almacenamiento Local</strong><span>Datos en este navegador. Sin internet. Ideal para un solo equipo.</span></div>
+      </div>
+      <div class="db-option" id="db-opt-cloud" onclick="setDB('cloud')">
+        <input type="radio" name="db-mode" id="r-cloud">
+        <div class="db-status-dot warn"></div>
+        <div class="db-option-info"><strong>☁️ Nube / Firebase</strong><span>Sincronización en tiempo real. Requiere internet y Firebase.</span></div>
+      </div>
+    </div>
+    <div class="db-config-card" id="cloud-config" style="display:none">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px">🔧 Configuración Firebase</div>
+      <div class="form-grid">
+        <div class="form-group"><label>API Key</label><input type="password" id="fb-apikey" placeholder="AIzaSy..."></div>
+        <div class="form-group"><label>Auth Domain</label><input type="text" id="fb-domain" placeholder="mi-proyecto.firebaseapp.com"></div>
+        <div class="form-group"><label>Project ID</label><input type="text" id="fb-project"></div>
+        <div class="form-group"><label>Collection</label><input type="text" id="fb-col" value="clientes"></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="testCloud()">🔌 Probar</button>
+        <button class="btn btn-primary btn-sm" onclick="saveCloudConfig()">Guardar</button>
+      </div>
+    </div>
+    <div class="section-wrap">
+      <div class="section-wrap-title">Gestión de datos</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="exportarJSON()">↓ Exportar JSON</button>
+        <button class="btn btn-ghost btn-sm" onclick="importarJSON()">↑ Importar JSON</button>
+        <button class="btn btn-amber btn-sm" onclick="limpiarDatos()">⚠ Limpiar demo</button>
+        <button class="btn btn-danger btn-sm" onclick="borrarTodo()">✕ Borrar todo</button>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text2)" id="db-info"></div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- BOTTOM NAV MOBILE -->
+<nav class="bottom-nav" id="bottom-nav">
+  <div class="bottom-nav-item active" id="bn-dashboard" onclick="showPanel('dashboard',null,'bn-dashboard')">
+    <div class="bn-icon">📊</div><span>Inicio</span>
+  </div>
+  <div class="bottom-nav-item" id="bn-clientes" onclick="showPanel('clientes',null,'bn-clientes')">
+    <div class="bn-icon">👥</div><span>Clientes</span>
+    <span class="bn-badge" id="bn-badge">0</span>
+  </div>
+  <div class="bottom-nav-item" id="bn-ingreso" onclick="showPanel('ingreso',null,'bn-ingreso')">
+    <div class="bn-icon">📲</div><span>Internar</span>
+  </div>
+  <div class="bottom-nav-item" id="bn-reportes" onclick="showPanel('reportes',null,'bn-reportes')">
+    <div class="bn-icon">📋</div><span>Reportes</span>
+  </div>
+  <div class="bottom-nav-item" id="bn-impresora" onclick="showPanel('impresora',null,'bn-impresora')">
+    <div class="bn-icon">🖨️</div><span>Impresora</span>
+  </div>
+  <div class="bottom-nav-item" onclick="logout()" style="color:var(--red)">
+    <div class="bn-icon">⏻</div><span>Salir</span>
+  </div>
+
+</nav>
+
+<!-- MODAL NUEVA / EDITAR FICHA -->
+<div class="modal-overlay" id="modal-nueva">
+  <div class="modal">
+    <div class="modal-header">
+      <span style="font-size:18px">📋</span>
+      <div class="modal-title" id="modal-title">Nueva Ficha</div>
+      <div class="modal-close" onclick="closeModal('nueva')">✕</div>
+    </div>
+    <div class="modal-body">
+      <!-- Selector tipo cliente -->
+      <div class="tipo-sel">
+        <div class="tipo-btn active-cli" id="tipo-btn-cli" onclick="setTipoCliente('cliente')">👤 Cliente Final</div>
+        <div class="tipo-btn" id="tipo-btn-pdv" onclick="setTipoCliente('pdv')">🏪 Punto de Venta</div>
+      </div>
+      <div id="pdv-fields" style="display:none;margin-bottom:12px;padding:12px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--orange)">
+        <div style="font-size:10px;color:var(--orange);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🏪 Punto de Venta</div>
+        <div class="form-group">
+          <label>Seleccionar o crear PDV</label>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="m-pdv-input" list="pdv-datalist"
+              placeholder="Escribe para buscar o crear nuevo PDV..."
+              oninput="onPdvInput(this.value)"
+              style="flex:1"
+              autocomplete="off">
+            <datalist id="pdv-datalist"></datalist>
+            <button type="button" class="btn btn-sm" style="background:var(--orange-dim);color:var(--orange);border-color:var(--orange);white-space:nowrap"
+              onclick="verHistorialPDV()">📋 Historial</button>
+          </div>
+          <div id="pdv-sel-info" style="display:none;margin-top:6px;padding:6px 8px;background:var(--surface3);border-radius:6px;font-size:11px;color:var(--text2)"></div>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label>Nombre *</label><input type="text" id="m-nombre" placeholder="Juan Pérez"></div>
+        <div class="form-group"><label>Teléfono</label><input type="tel" id="m-telefono" placeholder="+51 999 999 999"></div>
+        <div class="form-group"><label>Equipo / Marca</label><input type="text" id="m-equipo" placeholder="Samsung, iPhone..."></div>
+        <div class="form-group"><label>Modelo</label><input type="text" id="m-modelo" placeholder="Galaxy A54, 13 Pro..."></div>
+        <div class="form-group full"><label>Problema</label><textarea id="m-problema" placeholder="Describe el problema..."></textarea></div>
+        <div class="form-group"><label>Precio (S/.)</label><input type="number" id="m-precio" placeholder="0.00" min="0"></div>
+        <div class="form-group"><label>Estado</label>
+          <select id="m-estado">
+            <option>Pendiente</option><option>En proceso</option><option>Listo</option>
+            <option>Entregado</option><option>Garantía</option><option>Cancelado</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('nueva')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarFicha()" id="btn-guardar-modal">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER FICHA -->
+<div class="modal-overlay" id="modal-ver">
+  <div class="modal" style="width:480px">
+    <div class="modal-header">
+      <span style="font-size:18px">👤</span>
+      <div class="modal-title" id="ver-titulo">Ficha</div>
+      <div class="modal-close" onclick="closeModal('ver')">✕</div>
+    </div>
+    <div class="modal-body" id="ver-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('ver')">Cerrar</button>
+      <button class="btn btn-purple btn-sm" onclick="imprimirDesdeVer()">🖨 Ticket</button>
+      <button class="btn btn-ghost btn-sm" onclick="editarDesdeVer()">✏ Editar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TICKET PREVIEW -->
+<div class="modal-overlay" id="modal-ticket">
+  <div class="modal" style="width:360px">
+    <div class="modal-header">
+      <span>🖨️</span>
+      <div class="modal-title">Vista previa ticket</div>
+      <div class="modal-close" onclick="closeModal('ticket')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="printer-preview" id="modal-ticket-preview" style="font-size:10px"></div>
+      <div class="qr-modal-wrap" id="qr-modal-wrap" style="display:none">
+        <div class="qr-modal-box" id="qr-modal-box"></div>
+        <div class="qr-modal-info">
+          <strong>📱 Estado en tiempo real</strong>
+          <span>El cliente escanea este QR para ver el estado de su reparación en vivo.</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ticket')">Cerrar</button>
+      <button class="btn btn-primary" id="btn-imprimir-modal" onclick="imprimirDesdeModal(_ticketClienteId)">🖨 Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REPORTE INGRESOS -->
+<div class="modal-overlay" id="modal-ingresos">
+  <div class="modal" style="width:720px;max-width:97vw">
+    <div class="modal-header">
+      <span style="font-size:18px">💰</span>
+      <div class="modal-title">Reporte de Ingresos — Ronni GSM</div>
+      <div class="modal-close" onclick="closeModal('ingresos')">✕</div>
+    </div>
+    <div class="modal-body" style="padding:16px">
+      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" id="fi-todos" onclick="filtrarIngresos('todos',this)">Todos</button>
+        <button class="btn btn-ghost btn-sm" id="fi-hoy" onclick="filtrarIngresos('diario',this)">Hoy</button>
+        <button class="btn btn-ghost btn-sm" id="fi-semana" onclick="filtrarIngresos('semanal',this)">Esta semana</button>
+        <button class="btn btn-ghost btn-sm" id="fi-mes" onclick="filtrarIngresos('mensual',this)">Este mes</button>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="exportarIngresos('txt')">↓ TXT</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportarIngresos('csv')">↓ CSV</button>
+          <button class="btn btn-sm" style="background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber);margin-left:4px" onclick="cerrarDia()">🔒 Cierre del día</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Facturación</div>
+          <div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--purple)" id="ing-total">S/ 0</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Cobrado</div>
+          <div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--green)" id="ing-cobrado">S/ 0</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Por cobrar</div>
+          <div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--amber)" id="ing-pendiente">S/ 0</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Equipos</div>
+          <div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--cyan)" id="ing-count">0</div>
+        </div>
+      </div>
+      <!-- breakdown método pago -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:var(--green-dim);border:1px solid rgba(0,230,118,.2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:22px">💵</span>
+          <div><div style="font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:.8px;font-weight:700">Efectivo</div>
+          <div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--green)" id="ing-efectivo">S/ 0.00</div></div>
+        </div>
+        <div style="background:var(--purple-dim);border:1px solid rgba(179,136,255,.2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:22px">💜</span>
+          <div><div style="font-size:10px;color:var(--purple);text-transform:uppercase;letter-spacing:.8px;font-weight:700">Yape / Transf.</div>
+          <div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--purple)" id="ing-yape">S/ 0.00</div></div>
+        </div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;max-height:280px;overflow-y:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead style="position:sticky;top:0">
+            <tr style="background:var(--surface2)">
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">ID</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Cliente</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Equipo</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Servicio</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Estado</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Pago</th>
+              <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Precio</th>
+              <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Adelanto</th>
+              <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Saldo</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="ing-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('ingresos')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CIERRE ENTREGA -->
+<div class="modal-overlay" id="modal-cierre">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <span style="font-size:18px">✅</span>
+      <div class="modal-title">Cerrar servicio — Entrega</div>
+      <div class="modal-close" onclick="closeModal('cierre')">✕</div>
+    </div>
+    <div class="modal-body">
+      <!-- Resumen cliente -->
+      <div style="background:var(--surface2);border-radius:9px;padding:12px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700" id="cierre-nombre">—</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px" id="cierre-equipo">—</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px">
+          <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px">Precio</div>
+            <div style="font-size:14px;font-weight:700;color:var(--purple);font-family:var(--mono)" id="cierre-precio">S/ 0</div></div>
+          <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px">Adelanto</div>
+            <div style="font-size:14px;font-weight:700;color:var(--green);font-family:var(--mono)" id="cierre-adelanto">S/ 0</div></div>
+          <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px">Saldo</div>
+            <div style="font-size:14px;font-weight:700;color:var(--amber);font-family:var(--mono)" id="cierre-saldo">S/ 0</div></div>
+        </div>
+      </div>
+      <!-- Pago -->
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Monto recibido ahora (S/.)</label>
+          <input type="number" id="cierre-monto" placeholder="0.00" min="0" step="0.50"
+            style="font-size:18px;font-weight:700;text-align:center;color:var(--green)">
+        </div>
+        <div class="form-group">
+          <label>Método de pago</label>
+          <select id="cierre-metodo">
+            <option value="efectivo">💵 Efectivo</option>
+            <option value="yape">💜 Yape</option>
+            <option value="transferencia">🏦 Transferencia</option>
+            <option value="mixto">🔀 Mixto</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Observaciones (opcional)</label>
+          <input type="text" id="cierre-obs" placeholder="Notas del cierre...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('cierre')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarCierre()">✅ Confirmar entrega</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CIERRE DEL DÍA -->
+<div class="modal-overlay" id="modal-cierre-dia">
+  <div class="modal" style="width:480px">
+    <div class="modal-header">
+      <span style="font-size:18px">🔒</span>
+      <div class="modal-title">Cierre del día</div>
+      <div class="modal-close" onclick="closeModal('cierre-dia')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="printer-preview" id="cierre-dia-preview" style="font-size:11px;max-height:400px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('cierre-dia')">Cerrar</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportarCierreDia()">↓ Guardar TXT</button>
+      <button class="btn btn-primary" onclick="window.print()">🖨 Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GARANTÍA -->
+<div class="modal-overlay" id="modal-garantia">
+  <div class="modal" style="width:400px">
+    <div class="modal-header">
+      <span style="font-size:18px">🛡️</span>
+      <div class="modal-title">Cerrar por Garantía</div>
+      <div class="modal-close" onclick="closeModal('garantia')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--purple-dim);border:1px solid rgba(179,136,255,.3);border-radius:9px;padding:12px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700" id="gtia-nombre">—</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px" id="gtia-equipo">—</div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">🛡️</span>
+          <div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px">Precio original</div>
+            <div style="font-size:14px;font-weight:700;color:var(--purple);font-family:var(--mono)" id="gtia-precio">S/ 0</div>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--amber-dim);border-left:3px solid var(--amber);border-radius:7px;padding:10px 12px;font-size:12px;margin-bottom:12px">
+        ⚠️ El equipo se entregará <strong>sin cobro adicional</strong>. Solo se contabiliza lo ya cobrado como adelanto.
+      </div>
+      <div class="form-group">
+        <label>Motivo de garantía</label>
+        <textarea id="gtia-obs" placeholder="Ej: Falla recurrente, pantalla volvió a fallar..." style="min-height:70px"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('garantia')">Cancelar</button>
+      <button class="btn btn-purple" onclick="confirmarGarantia()">🛡️ Confirmar garantía</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HISTORIAL PDV -->
+<div class="modal-overlay" id="modal-pdv-historial">
+  <div class="modal" style="width:720px;max-width:97vw">
+    <div class="modal-header">
+      <span style="font-size:18px">🏪</span>
+      <div class="modal-title" id="pdv-hist-titulo">Historial PDV</div>
+      <div class="modal-close" onclick="closeModal('pdv-historial')">✕</div>
+    </div>
+    <div class="modal-body" style="padding:16px">
+      <!-- Selector de PDV -->
+      <!-- Selector PDV + crear nuevo -->
+      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin:0">
+          <label>Punto de Venta</label>
+          <select id="pdv-hist-sel" onchange="cargarHistorialPDV(this.value)" style="width:100%">
+            <option value="">— Seleccionar PDV —</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" style="background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange)" onclick="toggleNuevoPDVForm()">✚ Nuevo PDV</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportarHistorialPDV('txt')">↓ TXT</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportarHistorialPDV('csv')">↓ CSV</button>
+        </div>
+      </div>
+      <!-- Form crear nuevo PDV (oculto por defecto) -->
+      <div id="nuevo-pdv-form" style="display:none;background:var(--surface2);border:1px solid var(--orange);border-radius:9px;padding:12px;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">🏪 Crear nuevo Punto de Venta</div>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div class="form-group" style="flex:1;margin:0">
+            <label>Nombre del PDV *</label>
+            <input type="text" id="nuevo-pdv-nombre" placeholder="Ej: Móviles Express, TechStore..." 
+              onkeydown="if(event.key==='Enter')crearNuevoPDV()">
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sm btn-primary" onclick="crearNuevoPDV()">Guardar</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleNuevoPDVForm()">Cancelar</button>
+          </div>
+        </div>
+      </div>
+      <!-- Stats PDV -->
+      <div id="pdv-hist-stats" style="display:none;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Trabajos</div>
+            <div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--cyan)" id="pdv-stat-total">0</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Facturado</div>
+            <div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--purple)" id="pdv-stat-factura">S/ 0</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Cobrado</div>
+            <div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--green)" id="pdv-stat-cobrado">S/ 0</div>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">Pendiente</div>
+            <div style="font-size:18px;font-weight:700;font-family:var(--mono);color:var(--amber)" id="pdv-stat-pend">S/ 0</div>
+          </div>
+        </div>
+      </div>
+      <!-- Tabla historial -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;max-height:380px;overflow-y:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead style="position:sticky;top:0">
+            <tr style="background:var(--surface2)">
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">ID</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Contacto</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Equipo</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Servicio</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Estado</th>
+              <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Precio</th>
+              <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Cobrado</th>
+              <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase">Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="pdv-hist-tbody">
+            <tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">Selecciona un PDV para ver su historial</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('pdv-historial')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script>
+// ══════════════════════════════════════════
+//  RONNI GSM v3.3 — JS limpio y completo
+// ══════════════════════════════════════════
+
+const API_URL = 'https://ronni-gsm-backend-q7uw.onrender.com';
+const LANDING_URL = 'https://ronni-gsm-estado.onrender.com';
+
+// ── STATE ──
+let DB_MODE = localStorage.getItem('ronni_db_mode') || 'local';
+let editingId = null;
+let verClienteId = null;
+let _ticketClienteId = null;
+let tipoTicket = 'ingreso';
+let tipoClienteActual = 'cliente';
+let repTabActivo = 'todos';
+let repMainActivo = 'ingresos';
+let egrTabActivo = 'todos';
+let ingPeriodoActual = 'todos';
+let ingDataActual = [];
+let repDataActual = {};
+let _cache = null;
+let _cierreId = null;
+
+// ── LOCAL STORAGE ──
+function getClientesLocal() {
+  try { return JSON.parse(localStorage.getItem('ronni_clientes') || '[]'); } catch(e) { return []; }
+}
+function saveClientesLocal(arr) { localStorage.setItem('ronni_clientes', JSON.stringify(arr)); }
+function getPDVs() {
+  try { return JSON.parse(localStorage.getItem('ronni_pdvs') || '[]'); } catch { return []; }
+}
+function savePDVs(arr) { localStorage.setItem('ronni_pdvs', JSON.stringify(arr)); }
+function getPDVById(id) { return getPDVs().find(p => p.id === id) || null; }
+function nextPdvId() {
+  const p = getPDVs();
+  if (!p.length) return 'PDV-001';
+  const nums = p.map(x => parseInt((x.id||'').split('-')[1]||0)).filter(n=>!isNaN(n));
+  return 'PDV-' + (Math.max(...nums,0)+1).toString().padStart(3,'0');
+}
+
+// ── NUBE ──
+async function fetchClientesNube() {
+  const token = getToken();
+  const res = await fetch(API_URL + '/clientes', {
+    headers: token ? {'Authorization':'Bearer '+token} : {}
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return await res.json();
+}
+async function saveClienteNube(c) {
+  const token = getToken();
+  const res = await fetch(API_URL + '/clientes/' + c.id, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json', ...(token?{'Authorization':'Bearer '+token}:{})},
+    body: JSON.stringify(c)
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+}
+async function deleteClienteNube(id) {
+  const token = getToken();
+  await fetch(API_URL + '/clientes/' + id, {
+    method:'DELETE',
+    headers: token ? {'Authorization':'Bearer '+token} : {}
+  });
+}
+
+// ── INTERFAZ UNIFICADA ──
+function getClientes() {
+  return DB_MODE === 'cloud' ? (_cache || []) : getClientesLocal();
+}
+function saveClientes(arr) {
+  if (DB_MODE === 'cloud') {
+    _cache = arr;
+    updateBadges();
+    Promise.all(arr.map(c => saveClienteNube(c)))
+      .catch(e => toast('Error nube: ' + e.message, 'err'));
+  } else {
+    saveClientesLocal(arr);
+    updateBadges();
+  }
+}
+
+// ── LOADING ──
+function showLoading(show, msg) {
+  let el = document.getElementById('ronni-loading');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'ronni-loading';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px)';
+    el.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:28px 36px;text-align:center;min-width:260px"><div style="font-size:32px;margin-bottom:10px">☁️</div><div id="loading-msg" style="font-size:13px;font-weight:600;color:var(--cyan)">Conectando...</div><div style="font-size:11px;color:var(--text2);margin-top:4px">Primera vez puede tardar ~30 seg</div></div>';
+    document.body.appendChild(el);
+  }
+  if (msg) { const m = document.getElementById('loading-msg'); if(m) m.textContent = msg; }
+  el.style.display = show ? 'flex' : 'none';
+}
+
+async function cargarDatos() {
+  showLoading(true, DB_MODE === 'cloud' ? 'Conectando con Google Drive...' : 'Cargando...');
+  try {
+    if (DB_MODE === 'cloud') {
+      _cache = await fetchClientesNube();
+      toast('Conectado · ' + _cache.length + ' equipos en Drive', 'ok');
+    } else {
+      _cache = null;
+      if (!getClientesLocal().length) loadDemoData();
+    }
+    updateBadges();
+    refreshDash();
+  } catch(e) {
+    toast('Sin conexión a la nube: ' + e.message, 'err');
+    DB_MODE = 'local';
+    localStorage.setItem('ronni_db_mode','local');
+    applyDBModeUI();
+    if (!getClientesLocal().length) loadDemoData();
+    updateBadges();
+    refreshDash();
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ── DEMO DATA ──
+function loadDemoData() {
+  if (getClientesLocal().length) return;
+  const demo = [
+    {id:'GSM-001',nombre:'Carlos Mamani',telefono:'987654321',equipo:'Samsung',modelo:'Galaxy A54',imei:'356789012345678',color:'Negro',problema:'Pantalla rota',estado:'Pendiente',precio:'180',fecha:today(),hora:hora(),servicio:'Cambio de pantalla',tecnico:'Luis',adelanto:'50',fisico:'Pantalla rota',accesorios:'Solo equipo',pin:'1234',tipoCliente:'cliente',negocio:'',ruc:'',pdvId:''},
+    {id:'GSM-002',nombre:'María Torres',telefono:'912345678',equipo:'iPhone',modelo:'13 Pro',imei:'353679234567890',color:'Azul',problema:'Batería se agota rápido',estado:'En proceso',precio:'120',fecha:today(),hora:hora(),servicio:'Cambio de batería',tecnico:'Ana',adelanto:'60',fisico:'Bueno',accesorios:'Cargador',pin:'',tipoCliente:'cliente',negocio:'',ruc:'',pdvId:''},
+    {id:'GSM-003',nombre:'José Quispe',telefono:'999111222',equipo:'Xiaomi',modelo:'Redmi Note 12',imei:'867539012345670',color:'Blanco',problema:'No carga',estado:'Listo',precio:'80',fecha:today(),hora:hora(),servicio:'Cambio de conector carga',tecnico:'Luis',adelanto:'0',fisico:'Bueno',accesorios:'',pin:'0000',tipoCliente:'cliente',negocio:'',ruc:'',pdvId:''},
+    {id:'GSM-004',nombre:'Móviles Express',telefono:'955666777',equipo:'Motorola',modelo:'Edge 30',imei:'490154203237518',color:'Gris',problema:'Se mojó',estado:'En proceso',precio:'250',fecha:today(),hora:hora(),servicio:'Limpieza por líquido',tecnico:'Pedro',adelanto:'100',fisico:'Mojado',accesorios:'Case',pin:'',tipoCliente:'pdv',negocio:'Móviles Express',ruc:'',pdvId:'PDV-001'},
+    {id:'GSM-005',nombre:'Pedro Vásquez',telefono:'944333111',equipo:'Huawei',modelo:'P30 Lite',imei:'356789012345699',color:'Dorado',problema:'Flash quemado',estado:'Entregado',precio:'150',fecha:today(),hora:hora(),servicio:'Flash / Firmware',tecnico:'Ana',adelanto:'150',fisico:'Bueno',accesorios:'',pin:'',tipoCliente:'cliente',negocio:'',ruc:'',pdvId:'',totalCobrado:'150',metodoPago:'efectivo',pagoCierre:'0',fechaEntrega:today()}
+  ];
+  saveClientesLocal(demo);
+  if (!getPDVs().length) savePDVs([{id:'PDV-001',nombre:'Móviles Express',creado:today()}]);
+}
+
+function today() {
+  // Usa fecha LOCAL del sistema, no UTC — evita el problema de cambio de día a medianoche UTC
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd= String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+dd;
+}
+// Día operativo: el día según el reloj local del dispositivo
+// Los equipos pendientes/listos se mantienen en el dashboard indefinidamente hasta cobro
+function diaOperativo() { return today(); }
+function hora()  { return new Date().toTimeString().slice(0,5); }
+function nextId() {
+  const c = getClientes();
+  if (!c.length) return 'GSM-001';
+  const nums = c.map(x => parseInt((x.id||'').split('-')[1]||0)).filter(n=>!isNaN(n));
+  return 'GSM-' + (Math.max(...nums,0)+1).toString().padStart(3,'0');
+}
+
+// ── COBRO HELPERS ──
+function getCobrado(x) { return parseFloat(x.totalCobrado || x.adelanto || 0); }
+function getEfectivo(x) {
+  if (x.estado !== 'Entregado') return 0;
+  if (x.metodoPago === 'efectivo') return parseFloat(x.pagoCierre||0) + parseFloat(x.adelanto||0);
+  return parseFloat(x.adelanto||0);
+}
+function getYape(x) {
+  if (x.estado !== 'Entregado') return 0;
+  if (x.metodoPago === 'yape' || x.metodoPago === 'transferencia') return parseFloat(x.pagoCierre||0);
+  return 0;
+}
+function metodoBadge(m) {
+  if (!m || m === 'garantia') return '';
+  const map = {efectivo:['💵','var(--green)','var(--green-dim)'],yape:['💜','var(--purple)','var(--purple-dim)'],transferencia:['🏦','#00b4ff','#001a3a'],mixto:['🔀','var(--amber)','var(--amber-dim)']};
+  const [ico,col,bg] = map[m] || ['💳','var(--text2)','var(--surface3)'];
+  return '<span style="font-size:10px;background:'+bg+';color:'+col+';border-radius:4px;padding:1px 6px;font-weight:700">'+ico+' '+m+'</span>';
+}
+function estadoClass(e) {
+  return {Pendiente:'pendiente','En proceso':'proceso',Listo:'listo',Entregado:'entregado','Garantía':'garantia',Cancelado:'cancelado'}[e] || 'pendiente';
+}
+function badgeHTML(e) { return '<span class="badge '+estadoClass(e)+'">'+e+'</span>'; }
+
+// ── NAV ──
+function showPanel(id, el, bnId) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+  const panel = document.getElementById('panel-' + id);
+  if (panel) panel.classList.add('active');
+  if (el) el.classList.add('active');
+  else { const nav = document.getElementById('nav-' + id); if (nav) nav.classList.add('active'); }
+  if (bnId) { const bn = document.getElementById(bnId); if (bn) bn.classList.add('active'); }
+  else { const bn = document.getElementById('bn-' + id); if (bn) bn.classList.add('active'); }
+  if (id === 'dashboard')  refreshDash();
+  if (id === 'clientes')   renderClientes();
+  if (id === 'reportes')   renderReportes();
+  if (id === 'impresora')  poblarPrintSelect();
+  if (id === 'basedatos')  updateDBInfo();
+}
+function irClientes(filtro) {
+  showPanel('clientes', document.getElementById('nav-clientes'));
+  document.getElementById('filter-estado').value = filtro;
+  filtrarClientes();
+}
+
+// ── BADGES ──
+function updateBadges() {
+  const c = getClientes();
+  const bc = document.getElementById('badge-clientes'); if(bc) bc.textContent = c.length;
+  const tc = document.getElementById('topbar-count');   if(tc) tc.textContent = c.length + ' equipos';
+  const bnb = document.getElementById('bn-badge');      if(bnb) bnb.textContent = c.length;
+  const bp  = document.getElementById('badge-pdvs');    if(bp)  bp.textContent  = getPDVs().length;
+}
+
+// ── DASHBOARD ──
+let dashFiltro = 'hoy';
+function setDashFiltro(filtro) {
+  dashFiltro = filtro;
+  const btnHoy   = document.getElementById('dash-btn-hoy');
+  const btnTodos = document.getElementById('dash-btn-todos');
+  if (btnHoy)   btnHoy.className   = filtro==='hoy'   ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+  if (btnTodos) btnTodos.className = filtro==='todos' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+  renderDashTabla();
+}
+function renderDashTabla() {
+  const todos = getClientes();
+  const hoy   = diaOperativo();
+  let c;
+  if (dashFiltro === 'hoy') {
+    // Mostrar: equipos ingresados HOY + todos los pendientes/listos sin cobrar de días anteriores
+    const deHoy     = todos.filter(x => x.fecha === hoy);
+    const pendAntes = todos.filter(x =>
+      x.fecha !== hoy &&
+      (x.estado === 'Pendiente' || x.estado === 'En proceso' || x.estado === 'Listo')
+    );
+    // Unir sin duplicados, hoy primero, luego pendientes anteriores
+    const ids = new Set(deHoy.map(x=>x.id));
+    c = [...deHoy, ...pendAntes.filter(x=>!ids.has(x.id))];
+  } else {
+    c = todos;
+  }
+  const tbody = document.getElementById('dash-tbody');
+  tbody.innerHTML = '';
+  c.slice(0,20).forEach(x => {
+    const tr = document.createElement('tr');
+    tr.className = 'st-' + estadoClass(x.estado);
+    tr.onclick = () => verFicha(x.id);
+    const tb = x.tipoCliente==='pdv'
+      ? '<span style="font-size:8px;background:var(--orange-dim);color:var(--orange);border-radius:3px;padding:1px 4px;font-weight:700;margin-left:4px">PDV</span>'
+      : '<span style="font-size:8px;background:var(--cyan-dim);color:var(--cyan);border-radius:3px;padding:1px 4px;font-weight:700;margin-left:4px">CLI</span>';
+    // Marcar si es de un día anterior (pendiente arrastrado)
+    const esAnterior = x.fecha !== hoy && (x.estado==='Pendiente'||x.estado==='En proceso'||x.estado==='Listo');
+    const fechaTag = esAnterior
+      ? '<span style="font-size:9px;color:var(--amber);margin-left:2px" title="Pendiente de día anterior">⏳ '+(x.fecha||'')+'</span>'
+      : '<span style="font-size:11px;color:var(--text2)">'+(x.fecha||'')+'</span>';
+    tr.innerHTML =
+      '<td><span class="id-chip">'+x.id+'</span></td>'+
+      '<td style="font-weight:500">'+x.nombre+tb+'</td>'+
+      '<td>'+(x.equipo||'')+' '+(x.modelo||'')+'</td>'+
+      '<td>'+badgeHTML(x.estado)+'</td>'+
+      '<td>'+fechaTag+'</td>';
+    tbody.appendChild(tr);
+  });
+  if (!c.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">Sin equipos para mostrar</td></tr>';
+  }
+}
+function refreshDash() {
+  const c = getClientes();
+  const est = {Pendiente:0,'En proceso':0,Listo:0,Entregado:0,'Garantía':0,Cancelado:0};
+  let total = 0;
+  c.forEach(x => {
+    if (est[x.estado] !== undefined) est[x.estado]++;
+    total += parseFloat(x.precio||0);
+  });
+  document.getElementById('s-total').textContent    = c.length;
+  document.getElementById('s-pend').textContent     = est['Pendiente'];
+  document.getElementById('s-listo').textContent    = est['Listo'];
+  document.getElementById('s-ingresos').textContent = 'S/ ' + total.toFixed(0);
+  document.getElementById('r-proceso').textContent  = est['En proceso'];
+  document.getElementById('r-entregado').textContent= est['Entregado'];
+  document.getElementById('r-cancelado').textContent= est['Cancelado'];
+  const df = document.getElementById('dash-fecha');
+  if(df) df.textContent = new Date().toLocaleDateString('es-PE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  renderDashTabla();
+}
+
+// ── CLIENTES ──
+function renderClientes() { filtrarClientes(); }
+function filtrarClientes() {
+  const q  = (document.getElementById('search-box').value||'').toLowerCase();
+  const st = document.getElementById('filter-estado').value||'';
+  let c = getClientes();
+  if (q)  c = c.filter(x => (x.nombre+x.id+x.equipo+x.modelo+x.telefono+x.imei+x.negocio+'').toLowerCase().includes(q));
+  if (st) c = c.filter(x => x.estado === st);
+  const tbody = document.getElementById('clientes-tbody');
+  tbody.innerHTML = '';
+  document.getElementById('count-label').textContent = c.length + ' resultado(s)';
+  if (!c.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:24px">Sin resultados</td></tr>'; return; }
+  c.forEach(x => {
+    const tr = document.createElement('tr');
+    tr.className = 'st-' + estadoClass(x.estado);
+    const tipoBadge = x.tipoCliente==='pdv'
+      ? '<span style="font-size:9px;background:var(--orange-dim);color:var(--orange);border-radius:4px;padding:1px 5px;font-weight:700">PDV</span>'
+      : '<span style="font-size:9px;background:var(--cyan-dim);color:var(--cyan);border-radius:4px;padding:1px 5px;font-weight:700">CLI</span>';
+    const negInfo = x.negocio ? '<br><span style="font-size:10px;color:var(--text3)">'+x.negocio+'</span>' : '';
+    tr.innerHTML =
+      '<td><span class="id-chip">'+x.id+'</span></td>'+
+      '<td>'+tipoBadge+'</td>'+
+      '<td style="font-weight:500">'+x.nombre+negInfo+'</td>'+
+      '<td style="font-family:var(--mono);font-size:11px">'+(x.telefono||'—')+'</td>'+
+      '<td>'+(x.equipo||'—')+'</td>'+
+      '<td style="color:var(--text2)">'+(x.modelo||'—')+'</td>'+
+      '<td>'+badgeHTML(x.estado)+'</td>'+
+      '<td style="font-family:var(--mono);font-weight:600;color:var(--green)">S/ '+parseFloat(x.precio||0).toFixed(0)+'</td>'+
+      '<td style="color:var(--text2);font-size:11px">'+(x.fecha||'')+'</td>'+
+      '<td><div class="row-actions">'+
+        '<button class="btn btn-ghost btn-sm btn-icon" title="Ver" onclick="verFicha(\''+x.id+'\')">👁</button>'+
+        '<button class="btn btn-amber btn-sm btn-icon" title="Estado" onclick="cambiarEstado(\''+x.id+'\')">⇄</button>'+
+        '<button class="btn btn-purple btn-sm btn-icon" title="Ticket" onclick="imprimirCliente(\''+x.id+'\')">🖨</button>'+
+        '<button class="btn btn-ghost btn-sm btn-icon" title="Editar" onclick="editarFicha(\''+x.id+'\')">✏</button>'+
+        ((!_currentUser || _currentUser.rol === 'admin') ? '<button class="btn btn-danger btn-sm btn-icon" title="Eliminar" onclick="eliminarFicha(\''+x.id+'\')">✕</button>' : '')+
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+// ── PDV ──
+function fillPdvDatalist() {
+  const dl = document.getElementById('pdv-datalist'); if (!dl) return;
+  dl.innerHTML = '';
+  getPDVs().forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.nombre;
+    dl.appendChild(opt);
+  });
+}
+function onPdvInput(val) {
+  const pdvs = getPDVs();
+  const match = pdvs.find(p => p.nombre.toLowerCase() === val.toLowerCase());
+  const info = document.getElementById('pdv-sel-info');
+  if (!info) return;
+  if (match) {
+    info.style.display = 'block';
+    const trabajos = getClientes().filter(c => c.pdvId === match.id).length;
+    info.innerHTML = '<strong style="color:var(--orange)">'+match.nombre+'</strong> · '+match.id+' · '+trabajos+' trabajo(s)';
+    info.dataset.pdvId = match.id;
+  } else if (val.trim()) {
+    info.style.display = 'block';
+    info.innerHTML = '<span style="color:var(--cyan)">✚ Nuevo PDV: <strong>"'+val.trim()+'"</strong></span>';
+    info.dataset.pdvId = '';
+  } else {
+    info.style.display = 'none';
+    info.dataset.pdvId = '';
+  }
+}
+function resolverPDV(nombre) {
+  if (!nombre) return null;
+  const pdvs = getPDVs();
+  const match = pdvs.find(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+  if (match) return match;
+  const nuevo = {id: nextPdvId(), nombre: nombre.trim(), creado: today()};
+  pdvs.push(nuevo);
+  savePDVs(pdvs);
+  updateBadges();
+  toast('Nuevo PDV: ' + nuevo.nombre, 'ok');
+  return nuevo;
+}
+
+// ── TIPO CLIENTE ──
+function setTipoCliente(tipo) {
+  tipoClienteActual = tipo;
+  const btnCli = document.getElementById('tipo-btn-cli');
+  const btnPdv = document.getElementById('tipo-btn-pdv');
+  const pdvF   = document.getElementById('pdv-fields');
+  if (tipo === 'cliente') {
+    if(btnCli) btnCli.className = 'tipo-btn active-cli';
+    if(btnPdv) btnPdv.className = 'tipo-btn';
+    if(pdvF)   pdvF.style.display = 'none';
+  } else {
+    if(btnPdv) btnPdv.className = 'tipo-btn active-pdv';
+    if(btnCli) btnCli.className = 'tipo-btn';
+    if(pdvF)   pdvF.style.display = 'block';
+    fillPdvDatalist();
+  }
+}
+
+// ── MODAL ──
+function openModal(id) {
+  if (id === 'nueva' && !editingId) {
+    document.getElementById('modal-title').textContent = 'Nueva Ficha';
+    document.getElementById('btn-guardar-modal').textContent = '💾 Guardar';
+    ['m-nombre','m-telefono','m-equipo','m-modelo','m-problema','m-precio','m-pdv-input'].forEach(f => {
+      const el = document.getElementById(f); if (el) { el.value = ''; if(el.style) el.style.borderColor=''; }
+    });
+    document.getElementById('m-estado').value = 'Pendiente';
+    setTipoCliente('cliente');
+    const si = document.getElementById('pdv-sel-info');
+    if(si) { si.style.display='none'; si.dataset.pdvId=''; }
+  }
+  const modal = document.getElementById('modal-' + id);
+  if(modal) modal.classList.add('open');
+}
+function closeModal(id) {
+  const modal = document.getElementById('modal-' + id);
+  if(modal) modal.classList.remove('open');
+  if(id === 'nueva') editingId = null;
+}
+
+// ── GUARDAR FICHA ──
+function guardarFicha() {
+  const nombre = document.getElementById('m-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
+  const tipo = tipoClienteActual;
+  let negocio = '', pdvId = '';
+  if (tipo === 'pdv') {
+    const pdvNombre = (document.getElementById('m-pdv-input')||{value:''}).value.trim();
+    if (!pdvNombre) { toast('Selecciona o escribe el nombre del PDV', 'err'); return; }
+    const pdvObj = resolverPDV(pdvNombre);
+    if (pdvObj) { negocio = pdvObj.nombre; pdvId = pdvObj.id; }
+  }
+  const c = getClientes();
+  if (editingId) {
+    const idx = c.findIndex(x => x.id === editingId);
+    if (idx >= 0) {
+      c[idx] = {...c[idx], nombre,
+        telefono: document.getElementById('m-telefono').value.trim(),
+        equipo:   document.getElementById('m-equipo').value.trim(),
+        modelo:   document.getElementById('m-modelo').value.trim(),
+        problema: document.getElementById('m-problema').value.trim(),
+        precio:   document.getElementById('m-precio').value,
+        estado:   document.getElementById('m-estado').value,
+        tipoCliente: tipo, negocio, pdvId
+      };
+      saveClientes(c);
+      toast('Ficha actualizada: ' + c[idx].id, 'ok');
+    }
+  } else {
+    const id = nextId();
+    c.unshift({id, nombre,
+      telefono: document.getElementById('m-telefono').value.trim(),
+      equipo:   document.getElementById('m-equipo').value.trim(),
+      modelo:   document.getElementById('m-modelo').value.trim(),
+      problema: document.getElementById('m-problema').value.trim(),
+      precio:   document.getElementById('m-precio').value,
+      estado:   document.getElementById('m-estado').value,
+      tipoCliente: tipo, negocio, pdvId,
+      fecha:today(), hora:hora(), imei:'', color:'', accesorios:'', pin:'',
+      tecnico:'', servicio:'', adelanto:'0', fisico:'Bueno'
+    });
+    saveClientes(c);
+    toast('Registrado: ' + id, 'ok');
+  }
+  closeModal('nueva');
+  renderClientes();
+  refreshDash();
+}
+
+function editarFicha(id) {
+  const c = getClientes().find(x => x.id === id); if (!c) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Editar: ' + id;
+  document.getElementById('btn-guardar-modal').textContent = '💾 Actualizar';
+  document.getElementById('m-nombre').value   = c.nombre||'';
+  document.getElementById('m-telefono').value = c.telefono||'';
+  document.getElementById('m-equipo').value   = c.equipo||'';
+  document.getElementById('m-modelo').value   = c.modelo||'';
+  document.getElementById('m-problema').value = c.problema||'';
+  document.getElementById('m-precio').value   = c.precio||'';
+  document.getElementById('m-estado').value   = c.estado||'Pendiente';
+  setTipoCliente(c.tipoCliente||'cliente');
+  if (c.tipoCliente === 'pdv') {
+    const pi = document.getElementById('m-pdv-input'); if(pi) pi.value = c.negocio||'';
+    const info = document.getElementById('pdv-sel-info');
+    if (info && c.negocio) {
+      const trabajos = getClientes().filter(x => x.pdvId === c.pdvId).length;
+      info.style.display = 'block';
+      info.innerHTML = '<strong style="color:var(--orange)">'+c.negocio+'</strong> · '+(c.pdvId||'')+' · '+trabajos+' trabajo(s)';
+      info.dataset.pdvId = c.pdvId||'';
+    }
+  }
+  document.getElementById('modal-nueva').classList.add('open');
+}
+
+function verFicha(id) {
+  const c = getClientes().find(x => x.id === id); if (!c) return;
+  verClienteId = id;
+  document.getElementById('ver-titulo').textContent = c.nombre + ' · ' + c.id;
+  const tipoBadge = c.tipoCliente==='pdv'
+    ? '<span style="font-size:10px;background:var(--orange-dim);color:var(--orange);border-radius:4px;padding:1px 6px;font-weight:700;margin-left:6px">PDV</span>'
+    : '';
+  const pdvRow = (c.tipoCliente==='pdv' && c.negocio)
+    ? '<div style="margin-bottom:10px;padding:8px 10px;background:var(--orange-dim);border-radius:7px;border-left:3px solid var(--orange);font-size:12px;display:flex;align-items:center;justify-content:space-between"><div><strong style=\'color:var(--orange)\'>🏪 '+c.negocio+'</strong> <span style=\'font-size:10px;color:var(--text3)\'>'+(c.pdvId||'')+'</span></div><button onclick=\'closeModal(&quot;ver&quot;);verHistorialPDV(&quot;'+c.pdvId+'&quot;)\' class=\'btn btn-sm\' style=\'background:var(--orange-dim);color:var(--orange);border-color:var(--orange);font-size:10px\'>📋 Historial</button></div>'
+    : '';
+  function fila(l,v) { return '<div style="padding:6px 0;border-bottom:1px solid var(--border);color:var(--text2)">'+l+'</div><div style="padding:6px 0;border-bottom:1px solid var(--border)">'+v+'</div>'; }
+  document.getElementById('ver-body').innerHTML =
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'+
+      '<div style="width:44px;height:44px;border-radius:50%;background:var(--cyan-dim);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--cyan)">'+c.nombre[0]+'</div>'+
+      '<div><div style="font-size:15px;font-weight:700">'+c.nombre+tipoBadge+'</div>'+
+      '<div style="font-size:11px;color:var(--text2)">'+c.id+' · '+badgeHTML(c.estado)+'</div></div>'+
+    '</div>'+
+    pdvRow+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">'+
+      fila('📞 Teléfono', c.telefono||'—')+
+      fila('📱 Equipo', (c.equipo||'')+' '+(c.modelo||''))+
+      fila('🔢 IMEI', c.imei ? '<span style="font-family:var(--mono);font-size:10px">'+c.imei+'</span>' : '—')+
+      fila('🎨 Color', c.color||'—')+
+      fila('🔑 PIN', c.pin||'No registrado')+
+      fila('💰 Precio', '<span style="color:var(--green);font-weight:700">S/ '+parseFloat(c.precio||0).toFixed(2)+'</span>')+
+      fila('💵 Adelanto', 'S/ '+parseFloat(c.adelanto||0).toFixed(2))+
+      fila('🔧 Servicio', c.servicio||'—')+
+      fila('👤 Técnico', c.tecnico||'—')+
+      fila('📅 Fecha', c.fecha||'—')+
+    '</div>'+
+    (c.problema ? '<div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:7px;border-left:3px solid var(--cyan)"><div style="font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.8px">Problema</div><div style="font-size:12px">'+c.problema+'</div></div>' : '');
+  openModal('ver');
+}
+function editarDesdeVer()   { closeModal('ver'); editarFicha(verClienteId); }
+function imprimirDesdeVer() { closeModal('ver'); imprimirCliente(verClienteId); }
+
+// ── CAMBIAR ESTADO ──
+function cambiarEstado(id) {
+  const estados = ['Pendiente','En proceso','Listo','Entregado','Garantía','Cancelado'];
+  const c = getClientes(); const idx = c.findIndex(x => x.id === id); if (idx < 0) return;
+  const next = estados[(estados.indexOf(c[idx].estado)+1) % estados.length];
+  if (next === 'Entregado') { abrirCierreEntrega(id); return; }
+  if (next === 'Garantía')  { abrirGarantia(id); return; }
+  if (!confirm('Cambiar estado a "'+next+'"?')) return;
+  c[idx].estado = next; saveClientes(c);
+  toast(c[idx].nombre + ' → ' + next, 'info');
+  renderClientes(); refreshDash();
+}
+
+function eliminarFicha(id) {
+  const c = getClientes(); const x = c.find(q => q.id === id); if (!x) return;
+  if (!confirm('¿Eliminar ficha de '+x.nombre+'?')) return;
+  const nuevo = c.filter(q => q.id !== id);
+  if (DB_MODE === 'cloud') {
+    _cache = nuevo; updateBadges();
+    deleteClienteNube(id).then(()=>toast('Eliminado: '+id,'info')).catch(e=>toast('Error: '+e.message,'err'));
+  } else {
+    saveClientes(nuevo);
+    toast('Eliminado: '+id,'info');
+  }
+  renderClientes(); refreshDash();
+}
+
+// ── CIERRE ENTREGA ──
+function abrirCierreEntrega(id) {
+  _cierreId = id;
+  const c = getClientes().find(x => x.id === id); if (!c) return;
+  const precio = parseFloat(c.precio||0), adelanto = parseFloat(c.adelanto||0), saldo = precio - adelanto;
+  document.getElementById('cierre-nombre').textContent   = c.nombre;
+  document.getElementById('cierre-equipo').textContent   = (c.equipo||'')+' '+(c.modelo||'');
+  document.getElementById('cierre-precio').textContent   = 'S/ '+precio.toFixed(2);
+  document.getElementById('cierre-adelanto').textContent = 'S/ '+adelanto.toFixed(2);
+  document.getElementById('cierre-saldo').textContent    = 'S/ '+saldo.toFixed(2);
+  document.getElementById('cierre-monto').value          = saldo > 0 ? saldo.toFixed(2) : '';
+  document.getElementById('cierre-metodo').value         = 'efectivo';
+  document.getElementById('cierre-obs').value            = '';
+  openModal('cierre');
+}
+function confirmarCierre() {
+  const id = _cierreId; if (!id) return;
+  const c = getClientes(); const idx = c.findIndex(x => x.id === id); if (idx < 0) return;
+  const monto    = parseFloat(document.getElementById('cierre-monto').value||0);
+  const metodo   = document.getElementById('cierre-metodo').value;
+  const obs      = document.getElementById('cierre-obs').value.trim();
+  const adelanto = parseFloat(c[idx].adelanto||0);
+  c[idx].estado       = 'Entregado';
+  c[idx].pagoCierre   = monto.toFixed(2);
+  c[idx].metodoPago   = metodo;
+  c[idx].totalCobrado = (adelanto + monto).toFixed(2);
+  c[idx].fechaEntrega = today();
+  c[idx].horaEntrega  = hora();
+  c[idx].obsCierre    = obs;
+  saveClientes(c);
+  closeModal('cierre');
+  toast(c[idx].nombre+' → Entregado ('+metodo.toUpperCase()+' S/ '+monto.toFixed(2)+')', 'ok');
+  renderClientes(); refreshDash();
+}
+
+// ── GARANTÍA ──
+function abrirGarantia(id) {
+  _cierreId = id;
+  const c = getClientes().find(x => x.id === id); if (!c) return;
+  document.getElementById('gtia-nombre').textContent = c.nombre;
+  document.getElementById('gtia-equipo').textContent = (c.equipo||'')+' '+(c.modelo||'');
+  document.getElementById('gtia-precio').textContent = 'S/ '+parseFloat(c.precio||0).toFixed(2);
+  document.getElementById('gtia-obs').value = '';
+  openModal('garantia');
+}
+function confirmarGarantia() {
+  const id = _cierreId; if (!id) return;
+  const c = getClientes(); const idx = c.findIndex(x => x.id === id); if (idx < 0) return;
+  const obs = document.getElementById('gtia-obs').value.trim();
+  c[idx].estado       = 'Garantía';
+  c[idx].pagoCierre   = '0.00';
+  c[idx].totalCobrado = parseFloat(c[idx].adelanto||0).toFixed(2);
+  c[idx].metodoPago   = 'garantia';
+  c[idx].fechaEntrega = today();
+  c[idx].horaEntrega  = hora();
+  c[idx].obsCierre    = obs||'Devuelto por garantía';
+  saveClientes(c);
+  closeModal('garantia');
+  toast(c[idx].nombre+' → Garantía (sin cobro adicional)', 'info');
+  renderClientes(); refreshDash();
+}
+
+// ── INTERNAR EQUIPO ──
+function validarIMEI(el) {
+  el.value = el.value.replace(/\D/g,'');
+  el.style.borderColor = el.value.length===0?'var(--border)':el.value.length===15?'var(--green)':'var(--red)';
+}
+function guardarIngreso() {
+  const nombre = document.getElementById('in-nombre').value.trim();
+  if (!nombre) { toast('El nombre es obligatorio','err'); return; }
+  const equipo = document.getElementById('in-equipo').value;
+  if (!equipo) { toast('Selecciona la marca','err'); return; }
+  const imei = document.getElementById('in-imei').value.trim();
+  if (imei && imei.length !== 15) { toast('IMEI debe tener 15 dígitos','err'); return; }
+  const id = nextId();
+  const nuevo = {
+    id, nombre, telefono:document.getElementById('in-telefono').value.trim(),
+    dni:document.getElementById('in-dni').value.trim(),
+    equipo, modelo:document.getElementById('in-modelo').value.trim(),
+    imei, color:'', fisico:document.getElementById('in-fisico').value,
+    accesorios:document.getElementById('in-accesorios').value.trim(),
+    pin:document.getElementById('in-pin').value.trim(),
+    problema:document.getElementById('in-problema').value.trim(),
+    servicio:document.getElementById('in-servicio').value,
+    precio:document.getElementById('in-precio').value||'0',
+    adelanto:document.getElementById('in-adelanto').value||'0',
+    tecnico:document.getElementById('in-tecnico').value.trim(),
+    entrega:document.getElementById('in-entrega').value,
+    estado:document.getElementById('in-estado').value,
+    tipoCliente:'cliente', negocio:'', pdvId:'',
+    fecha:today(), hora:hora()
+  };
+  const c = getClientes(); c.unshift(nuevo); saveClientes(c);
+  toast('Equipo internado: '+id, 'ok');
+  limpiarIngreso(); refreshDash();
+}
+function limpiarIngreso() {
+  ['in-nombre','in-telefono','in-dni','in-modelo','in-imei','in-accesorios','in-pin','in-problema','in-tecnico','in-precio','in-adelanto'].forEach(f=>{
+    const el=document.getElementById(f); if(el){el.value='';el.style.borderColor='';}
+  });
+  document.getElementById('in-equipo').value   = '';
+  document.getElementById('in-fisico').value   = 'Bueno';
+  document.getElementById('in-servicio').value = 'Diagnóstico';
+  document.getElementById('in-estado').value   = 'Pendiente';
+}
+function previsualizarTicket() {
+  const tmp = {
+    id:'PRV-000', nombre:document.getElementById('in-nombre').value||'—',
+    telefono:document.getElementById('in-telefono').value,
+    equipo:document.getElementById('in-equipo').value,
+    modelo:document.getElementById('in-modelo').value,
+    imei:document.getElementById('in-imei').value,
+    problema:document.getElementById('in-problema').value,
+    precio:document.getElementById('in-precio').value||'0',
+    estado:document.getElementById('in-estado').value||'Pendiente',
+    servicio:document.getElementById('in-servicio').value,
+    tecnico:document.getElementById('in-tecnico').value,
+    adelanto:document.getElementById('in-adelanto').value||'0',
+    accesorios:document.getElementById('in-accesorios').value,
+    fecha:today(), hora:hora()
+  };
+  document.getElementById('modal-ticket-preview').textContent = generarTextoTicket(tmp,'ingreso');
+  openModal('ticket');
+}
+
+// ── REPORTES ──
+function filtrarPorPeriodo(c, periodo) {
+  const hoy = diaOperativo();
+  if (periodo === 'diario') return c.filter(x => x.fecha === hoy);
+  if (periodo === 'semanal') {
+    const now=new Date(), lunes=new Date(now);
+    lunes.setDate(now.getDate()-((now.getDay()+6)%7)); lunes.setHours(0,0,0,0);
+    return c.filter(x => { try { return new Date(x.fecha)>=lunes; } catch{return false;} });
+  }
+  if (periodo === 'mensual') {
+    const now=new Date(), mes=now.getMonth(), yr=now.getFullYear();
+    return c.filter(x => { try { const d=new Date(x.fecha); return d.getMonth()===mes&&d.getFullYear()===yr; } catch{return false;} });
+  }
+  return c;
+}
+// ── EGRESOS ──
+function getEgresos() { try{return JSON.parse(localStorage.getItem('ronni_egresos')||'[]');}catch(e){return[];} }
+function saveEgresos(arr) { localStorage.setItem('ronni_egresos',JSON.stringify(arr)); }
+function nextEgrId() {
+  const e=getEgresos(); if(!e.length) return 'EGR-001';
+  const nums=e.map(x=>parseInt((x.id||'').split('-')[1]||0)).filter(n=>!isNaN(n));
+  return 'EGR-'+(Math.max(...nums,0)+1).toString().padStart(3,'0');
+}
+function abrirModalEgreso() {
+  document.getElementById('egr-desc').value='';
+  document.getElementById('egr-monto').value='';
+  document.getElementById('egr-cat').value='alimentacion';
+  document.getElementById('egr-fecha').value=today();
+  document.getElementById('egr-notas').value='';
+  openModal('egreso');
+}
+function guardarEgreso() {
+  const desc=document.getElementById('egr-desc').value.trim();
+  const monto=parseFloat(document.getElementById('egr-monto').value||0);
+  if(!desc){toast('Escribe una descripción','err');return;}
+  if(!monto||monto<=0){toast('Monto inválido','err');return;}
+  const e=getEgresos();
+  e.unshift({
+    id:nextEgrId(), desc, monto:monto.toFixed(2),
+    categoria:document.getElementById('egr-cat').value,
+    fecha:document.getElementById('egr-fecha').value||today(),
+    notas:document.getElementById('egr-notas').value.trim(),
+    hora:hora()
+  });
+  saveEgresos(e);
+  closeModal('egreso');
+  toast('Gasto registrado: S/ '+monto.toFixed(2),'ok');
+  renderEgresos();
+}
+function eliminarEgreso(id) {
+  if(!confirm('¿Eliminar este gasto?')) return;
+  saveEgresos(getEgresos().filter(x=>x.id!==id));
+  renderEgresos();
+  toast('Eliminado','info');
+}
+const CAT_LABELS = {alimentacion:'🍽️ Alimentación',local:'🏠 Local',servicios:'💡 Servicios',insumos:'🔩 Insumos',transporte:'🚌 Transporte',otro:'📌 Otro'};
+const CAT_COLORS = {alimentacion:'var(--amber)',local:'var(--purple)',servicios:'#00b4ff',insumos:'var(--cyan)',transporte:'var(--green)',otro:'var(--text2)'};
+function cambiarEgrTab(tab) {
+  egrTabActivo=tab;
+  document.querySelectorAll('#repmain-egresos .rep-tab').forEach(t=>t.classList.remove('active'));
+  const el=document.getElementById('etab-'+tab); if(el) el.classList.add('active');
+  renderEgresos();
+}
+function renderEgresos() {
+  const todos=getEgresos();
+  const filtrado=filtrarEgresosPorPeriodo(todos,egrTabActivo);
+  const el=document.getElementById('egr-content'); if(!el) return;
+  const lbl=document.getElementById('egr-periodo-label');
+
+  let total=0; filtrado.forEach(x=>total+=parseFloat(x.monto||0));
+
+  // Totales por categoría
+  const porCat={};
+  filtrado.forEach(x=>{ const c=x.categoria||'otro'; porCat[c]=(porCat[c]||0)+parseFloat(x.monto||0); });
+  const catBars=Object.entries(porCat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+    const pct=total?Math.round(v/total*100):0;
+    return `<div class="report-bar-wrap"><div class="report-bar-label"><span style="color:${CAT_COLORS[k]||'var(--text2)'}">${CAT_LABELS[k]||k}</span><span style="font-family:var(--mono);font-weight:700">S/ ${v.toFixed(2)}</span></div><div class="report-bar"><div class="report-bar-fill" style="width:${pct}%;background:${CAT_COLORS[k]||'var(--text2)'}"></div></div></div>`;
+  }).join('') || '<div style="color:var(--text3);font-size:12px">Sin gastos</div>';
+
+  const rows=filtrado.map(x=>`
+    <tr style="border-top:1px solid var(--border)">
+      <td style="padding:8px 10px"><span class="id-chip">${x.id}</span></td>
+      <td style="padding:8px 10px;font-size:12px;font-weight:500">${x.desc}</td>
+      <td style="padding:8px 10px"><span style="font-size:10px;color:${CAT_COLORS[x.categoria]||'var(--text2)'};background:var(--surface3);border-radius:4px;padding:2px 7px;font-weight:700">${CAT_LABELS[x.categoria]||x.categoria}</span></td>
+      <td style="padding:8px 10px;font-family:var(--mono);font-weight:700;color:var(--red)">S/ ${parseFloat(x.monto).toFixed(2)}</td>
+      <td style="padding:8px 10px;font-size:11px;color:var(--text2)">${x.fecha}${x.hora?' '+x.hora:''}</td>
+      <td style="padding:8px 10px;font-size:11px;color:var(--text3)">${x.notas||'—'}</td>
+      <td style="padding:8px 10px"><button class="btn btn-danger btn-sm btn-icon" onclick="eliminarEgreso('${x.id}')">✕</button></td>
+    </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px">Sin gastos registrados</td></tr>';
+
+  if(lbl) lbl.textContent=`${filtrado.length} gasto(s) · Total: S/ ${total.toFixed(2)}`;
+
+  el.innerHTML=`
+    <div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;flex-shrink:0">
+        <div class="stat-card red" style="cursor:default;--red-dim:#3a0000">
+          <div class="stat-label">Total gastos</div>
+          <div class="stat-value" style="color:var(--red);font-size:20px">S/ ${total.toFixed(2)}</div>
+          <div class="stat-sub">${filtrado.length} registro(s)</div>
+        </div>
+        <div class="section-wrap" style="margin-bottom:0"><div class="section-wrap-title">Por categoría</div>${catBars}</div>
+      </div>
+      <div class="table-wrap" style="flex:1;min-height:0">
+        <div class="table-top" style="padding:8px 12px;flex-shrink:0">
+          <span style="font-size:11px;font-weight:700">Detalle de gastos</span>
+        </div>
+        <div class="table-scroll">
+          <table><thead><tr>
+            <th>ID</th><th>Descripción</th><th>Categoría</th><th>Monto</th><th>Fecha</th><th>Notas</th><th></th>
+          </tr></thead><tbody>${rows}</tbody></table>
+        </div>
+      </div>
+    </div>`;
+}
+function filtrarEgresosPorPeriodo(arr,periodo) {
+  if(periodo==='todos') return arr;
+  const hoy=today();
+  if(periodo==='diario') return arr.filter(x=>x.fecha===hoy);
+  if(periodo==='semanal') {
+    const d=new Date(); d.setDate(d.getDate()-d.getDay());
+    const ini=d.toISOString().split('T')[0];
+    return arr.filter(x=>x.fecha>=ini&&x.fecha<=hoy);
+  }
+  if(periodo==='mensual') return arr.filter(x=>x.fecha&&x.fecha.slice(0,7)===hoy.slice(0,7));
+  return arr;
+}
+function exportarEgresos() {
+  const arr=filtrarEgresosPorPeriodo(getEgresos(),egrTabActivo);
+  let csv='ID,Descripcion,Categoria,Monto,Fecha,Notas\n';
+  arr.forEach(x=>{ csv+=x.id+',"'+x.desc+'","'+(CAT_LABELS[x.categoria]||x.categoria)+'","'+x.monto+'","'+x.fecha+'","'+(x.notas||'')+'"\n'; });
+  descargar(csv,'text/csv','egresos_ronnigsm_'+today()+'.csv');
+  toast('Exportado','ok');
+}
+
+// ── REPORTES SOLAPAS PRINCIPALES ──
+function cambiarRepMain(seccion) {
+  repMainActivo = seccion;
+  document.querySelectorAll('#panel-reportes > .rep-tabs > .rep-tab').forEach(t=>t.classList.remove('active'));
+  const tab=document.getElementById('rmain-'+seccion); if(tab) tab.classList.add('active');
+  document.querySelectorAll('.rep-main-section').forEach(s=>s.style.display='none');
+  const sec=document.getElementById('repmain-'+seccion);
+  if(sec) sec.style.display='flex';
+  // Mostrar/ocultar botones export según sección
+  const expBtns=document.getElementById('rep-export-btns');
+  if(expBtns) expBtns.style.display=(seccion==='ingresos')?'flex':'none';
+  if(seccion==='servicios') renderRepServicios();
+  if(seccion==='estado')    renderRepEstado();
+  if(seccion==='egresos')   renderEgresos();
+}
+function renderRepServicios() {
+  const el=document.getElementById('rep-servicios-content'); if(!el) return;
+  const c=getClientes();
+  const serv={}, tecData={};
+
+  c.forEach(x=>{
+    // Servicios
+    const s=x.servicio||'Sin especificar'; serv[s]=(serv[s]||0)+1;
+    // Técnicos — acumular datos completos
+    if(x.tecnico){
+      const t=x.tecnico;
+      if(!tecData[t]) tecData[t]={nombre:t,total:0,cobrado:0,servicios:0,entregados:0,pendientes:0,proceso:0,listo:0,marcas:{}};
+      const d=tecData[t];
+      d.servicios++;
+      d.total+=parseFloat(x.precio||0);
+      d.cobrado+=getCobrado(x);
+      if(x.estado==='Entregado') d.entregados++;
+      else if(x.estado==='Pendiente') d.pendientes++;
+      else if(x.estado==='En proceso') d.proceso++;
+      else if(x.estado==='Listo') d.listo++;
+      const m=x.equipo||'Otro'; d.marcas[m]=(d.marcas[m]||0)+1;
+    }
+  });
+
+  const maxS=Math.max(...Object.values(serv),1);
+  const barsS=Object.entries(serv).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>`
+    <div class="report-bar-wrap">
+      <div class="report-bar-label"><span>${k}</span><span style="font-family:var(--mono);font-weight:700">${v}</span></div>
+      <div class="report-bar"><div class="report-bar-fill" style="width:${Math.round(v/maxS*100)}%;background:var(--cyan)"></div></div>
+    </div>`).join('')||'<div style="color:var(--text3);font-size:12px;padding:8px">Sin datos</div>';
+
+  // Tarjetas por técnico
+  const tecList=Object.values(tecData).sort((a,b)=>b.total-a.total);
+  const maxTec=tecList[0]?tecList[0].total:1;
+
+  const tecCards=tecList.map(t=>{
+    const pct=maxTec?Math.round(t.total/maxTec*100):0;
+    const cobPct=t.total?Math.round(t.cobrado/t.total*100):0;
+    const topMarca=Object.entries(t.marcas).sort((a,b)=>b[1]-a[1])[0];
+    return `
+    <div class="section-wrap" style="margin-bottom:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--cyan-dim);border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--cyan);flex-shrink:0">${t.nombre.charAt(0).toUpperCase()}</div>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--text)">${t.nombre}</div>
+            <div style="font-size:10px;color:var(--text3)">${t.servicios} servicio(s)${topMarca?' · '+topMarca[0]+' ('+topMarca[1]+')':''}</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--cyan)">S/ ${t.total.toFixed(2)}</div>
+          <div style="font-size:10px;color:var(--text2)">facturado</div>
+        </div>
+      </div>
+      <!-- Barra facturación relativa -->
+      <div class="report-bar" style="margin-bottom:10px;height:6px"><div class="report-bar-fill" style="width:${pct}%;background:var(--cyan)"></div></div>
+      <!-- Stats en grid -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">
+        <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--green)">S/ ${t.cobrado.toFixed(2)}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">Cobrado</div>
+        </div>
+        <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--red)">S/ ${(t.total-t.cobrado).toFixed(2)}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">Por cobrar</div>
+        </div>
+        <div style="background:var(--surface3);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--purple)">S/ ${t.servicios?((t.total/t.servicios).toFixed(2)):'0.00'}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">Ticket prom.</div>
+        </div>
+      </div>
+      <!-- Cobrado % bar -->
+      <div class="report-bar-wrap" style="margin-bottom:6px">
+        <div class="report-bar-label" style="font-size:10px"><span style="color:var(--text3)">% Cobrado</span><span style="font-family:var(--mono)">${cobPct}%</span></div>
+        <div class="report-bar" style="height:5px"><div class="report-bar-fill" style="width:${cobPct}%;background:var(--green)"></div></div>
+      </div>
+      <!-- Estados -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        ${t.entregados?`<span style="font-size:10px;background:var(--green-dim);color:var(--green);border-radius:4px;padding:2px 7px;font-weight:600">✅ ${t.entregados} entregado(s)</span>`:''}
+        ${t.listo?`<span style="font-size:10px;background:var(--green-dim);color:var(--green);border-radius:4px;padding:2px 7px;font-weight:600">🔔 ${t.listo} listo(s)</span>`:''}
+        ${t.proceso?`<span style="font-size:10px;background:var(--blue-dim);color:#00b4ff;border-radius:4px;padding:2px 7px;font-weight:600">🔧 ${t.proceso} en proceso</span>`:''}
+        ${t.pendientes?`<span style="font-size:10px;background:var(--amber-dim);color:var(--amber);border-radius:4px;padding:2px 7px;font-weight:600">⏳ ${t.pendientes} pendiente(s)</span>`:''}
+      </div>
+    </div>`;
+  }).join('')||'<div style="color:var(--text3);font-size:12px;padding:12px">Sin técnicos registrados</div>';
+
+  // Totales globales técnicos
+  const gtTotal=tecList.reduce((s,t)=>s+t.total,0);
+  const gtCob=tecList.reduce((s,t)=>s+t.cobrado,0);
+  const gtServ=tecList.reduce((s,t)=>s+t.servicios,0);
+
+  el.innerHTML=`
+    <div style="overflow-y:auto;flex:1;padding-bottom:8px">
+      <!-- Resumen global técnicos -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+        <div class="stat-card cyan" style="cursor:default"><div class="stat-label">Técnicos activos</div><div class="stat-value">${tecList.length}</div></div>
+        <div class="stat-card green" style="cursor:default"><div class="stat-label">Facturación total</div><div class="stat-value" style="font-size:16px">S/ ${gtTotal.toFixed(2)}</div></div>
+        <div class="stat-card amber" style="cursor:default"><div class="stat-label">Servicios totales</div><div class="stat-value">${gtServ}</div></div>
+      </div>
+      <!-- Cards técnicos -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:16px">
+        ${tecCards}
+      </div>
+      <!-- Servicios más frecuentes -->
+      <div class="section-wrap">
+        <div class="section-wrap-title">Servicios más frecuentes</div>
+        ${barsS}
+      </div>
+    </div>`;
+}
+function renderRepEstado() {
+  const el=document.getElementById('rep-estado-content'); if(!el) return;
+  const c=getClientes();
+  const estados={Pendiente:0,'En proceso':0,Listo:0,Entregado:0,'Garantía':0,Cancelado:0};
+  const marcas={}; let total=0;
+  c.forEach(x=>{
+    if(estados[x.estado]!==undefined) estados[x.estado]++;
+    const m=x.equipo||'Otro'; marcas[m]=(marcas[m]||0)+1;
+    total+=parseFloat(x.precio||0);
+  });
+  const colors={Pendiente:'var(--amber)','En proceso':'#00b4ff',Listo:'var(--green)',Entregado:'var(--text2)','Garantía':'var(--purple)',Cancelado:'var(--red)'};
+  const barsE=Object.entries(estados).map(([k,v])=>{
+    const pct=c.length?Math.round(v/c.length*100):0;
+    return `<div class="report-bar-wrap"><div class="report-bar-label"><span>${k}</span><span style="font-family:var(--mono);font-weight:700">${v} (${pct}%)</span></div><div class="report-bar"><div class="report-bar-fill" style="width:${pct}%;background:${colors[k]||'var(--text3)'}"></div></div></div>`;
+  }).join('');
+  const sortedM=Object.entries(marcas).sort((a,b)=>b[1]-a[1]),maxM=sortedM[0]?sortedM[0][1]:1;
+  const barsM=sortedM.map(([k,v])=>`<div class="report-bar-wrap"><div class="report-bar-label"><span>${k}</span><span style="font-family:var(--mono);font-weight:700">${v}</span></div><div class="report-bar"><div class="report-bar-fill" style="width:${Math.round(v/maxM*100)}%;background:var(--purple)"></div></div></div>`).join('');
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 0">
+      <div class="section-wrap"><div class="section-wrap-title">Por estado</div>${barsE}</div>
+      <div class="section-wrap"><div class="section-wrap-title">Por marca</div>${barsM}</div>
+    </div>`;
+}
+
+function cambiarRepTab(tab) {
+  repTabActivo = tab;
+  // Solo afecta las sub-solapas de ingresos
+  document.querySelectorAll('#repmain-ingresos .rep-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#repmain-ingresos .rep-content').forEach(t=>t.classList.remove('active'));
+  const tabEl=document.getElementById('rtab-'+tab); if(tabEl) tabEl.classList.add('active');
+  const repEl=document.getElementById('rep-'+tab); if(repEl) repEl.classList.add('active');
+}
+function buildRepContent(containerId, c, titulo) {
+  const el = document.getElementById(containerId); if(!el) return;
+
+  // ── Cálculos financieros detallados ──
+  let totalPrecio=0, totalCob=0, totalAdelanto=0, totalSaldo=0;
+  let totalEfectivo=0, totalYape=0, totalTransf=0, totalPendCobro=0;
+  let cntEntregado=0, cntPendiente=0, cntProceso=0, cntListo=0;
+  let cntCliente=0, cntPDV=0;
+
+  c.forEach(x=>{
+    const precio=parseFloat(x.precio||0);
+    const cob=getCobrado(x);
+    const ade=parseFloat(x.adelanto||0);
+    totalPrecio   += precio;
+    totalCob      += cob;
+    totalAdelanto += ade;
+    totalSaldo    += Math.max(precio-ade,0);
+    if(x.estado==='Entregado'){ cntEntregado++; }
+    else if(x.estado==='Pendiente'){ cntPendiente++; totalPendCobro+=precio; }
+    else if(x.estado==='En proceso'){ cntProceso++; totalPendCobro+=precio; }
+    else if(x.estado==='Listo'){ cntListo++; totalPendCobro+=precio; }
+    if(x.tipoCliente==='pdv') cntPDV++; else cntCliente++;
+    // métodos de pago
+    if(x.metodoPago==='efectivo')     totalEfectivo += parseFloat(x.pagoCierre||0);
+    else if(x.metodoPago==='yape')    totalYape     += parseFloat(x.pagoCierre||0);
+    else if(x.metodoPago==='transferencia') totalTransf += parseFloat(x.pagoCierre||0);
+    // adelantos siempre suman a efectivo si no tienen metodoPago asignado
+    if(!x.metodoPago && ade>0) totalEfectivo += ade;
+    if(x.metodoPago && ade>0) totalEfectivo += ade; // adelanto siempre efectivo
+  });
+  const totalPorCobrar = totalPrecio - totalCob;
+  const ticketProm = c.length ? totalPrecio/c.length : 0;
+
+  // ── Métodos de pago (solo entregados con metodoPago) ──
+  const entregados = c.filter(x=>x.estado==='Entregado'||x.metodoPago);
+  let mEf=0,mYp=0,mTr=0;
+  entregados.forEach(x=>{ mEf+=getEfectivo(x); mYp+=getYape(x); });
+  const totalMet=mEf+mYp; const pEf=totalMet?Math.round(mEf/totalMet*100):0; const pYp=totalMet?Math.round(mYp/totalMet*100):0;
+
+  // ── Filas de tabla con detalle financiero ──
+  const rows = c.map(x=>{
+    const precio=parseFloat(x.precio||0), cob=getCobrado(x), ade=parseFloat(x.adelanto||0), saldo=Math.max(precio-ade,0);
+    const tipob=x.tipoCliente==='pdv'?'<span style="font-size:8px;background:var(--orange-dim);color:var(--orange);border-radius:3px;padding:1px 4px;font-weight:700;margin-left:3px">PDV</span>':'';
+    const metb=x.metodoPago?'<span style="font-size:9px;background:var(--surface3);color:var(--text2);border-radius:3px;padding:1px 5px;font-weight:600">'+x.metodoPago+'</span>':'—';
+    const saldoCol=saldo>0?'color:var(--red)':'color:var(--green)';
+    return '<tr class="st-'+estadoClass(x.estado)+'" style="cursor:pointer" onclick="verFicha(\''+x.id+'\')">'
+      +'<td><span class="id-chip">'+x.id+'</span></td>'
+      +'<td>'+x.nombre+tipob+'</td>'
+      +'<td>'+(x.equipo||'')+' '+(x.modelo||'')+'</td>'
+      +'<td>'+badgeHTML(x.estado)+'</td>'
+      +'<td style="font-family:var(--mono);color:var(--purple);text-align:right">S/ '+precio.toFixed(2)+'</td>'
+      +'<td style="font-family:var(--mono);color:var(--cyan);text-align:right">S/ '+ade.toFixed(2)+'</td>'
+      +'<td style="font-family:var(--mono);'+saldoCol+';text-align:right">S/ '+saldo.toFixed(2)+'</td>'
+      +'<td style="font-family:var(--mono);color:var(--green);text-align:right">S/ '+cob.toFixed(2)+'</td>'
+      +'<td>'+metb+'</td>'
+      +'<td style="color:var(--text2);font-size:11px">'+(x.fecha||'')+'</td>'
+      +'</tr>';
+  }).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:16px">Sin datos para este período</td></tr>';
+
+  el.innerHTML =
+    // ── Tarjetas resumen ──
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;flex-shrink:0">'
+      +'<div class="stat-card cyan"  style="cursor:default"><div class="stat-label">Facturación total</div><div class="stat-value" style="font-size:16px">S/ '+totalPrecio.toFixed(2)+'</div><div class="stat-sub">'+c.length+' servicios · '+titulo+'</div></div>'
+      +'<div class="stat-card green" style="cursor:default"><div class="stat-label">Total cobrado</div><div class="stat-value" style="font-size:16px">S/ '+totalCob.toFixed(2)+'</div><div class="stat-sub">'+cntEntregado+' entregados</div></div>'
+      +'<div class="stat-card amber" style="cursor:default"><div class="stat-label">Por cobrar</div><div class="stat-value" style="font-size:16px">S/ '+totalPorCobrar.toFixed(2)+'</div><div class="stat-sub">'+(cntPendiente+cntProceso+cntListo)+' pendientes</div></div>'
+      +'<div class="stat-card purple" style="cursor:default"><div class="stat-label">Ticket promedio</div><div class="stat-value" style="font-size:16px">S/ '+ticketProm.toFixed(2)+'</div><div class="stat-sub">por servicio</div></div>'
+    +'</div>'
+    // ── Fila detalle financiero ──
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;flex-shrink:0">'
+      // Adelantos y saldos
+      +'<div class="section-wrap" style="margin-bottom:0">'
+        +'<div class="section-wrap-title">Adelantos y saldos</div>'
+        +'<div class="report-bar-wrap"><div class="report-bar-label"><span style="color:var(--cyan)">💰 Adelantos cobrados</span><span style="font-family:var(--mono);font-weight:700;color:var(--cyan)">S/ '+totalAdelanto.toFixed(2)+'</span></div><div class="report-bar"><div class="report-bar-fill" style="width:'+(totalPrecio?Math.round(totalAdelanto/totalPrecio*100):0)+'%;background:var(--cyan)"></div></div></div>'
+        +'<div class="report-bar-wrap"><div class="report-bar-label"><span style="color:var(--red)">⏳ Saldos pendientes</span><span style="font-family:var(--mono);font-weight:700;color:var(--red)">S/ '+totalPorCobrar.toFixed(2)+'</span></div><div class="report-bar"><div class="report-bar-fill" style="width:'+(totalPrecio?Math.round(totalPorCobrar/totalPrecio*100):0)+'%;background:var(--red)"></div></div></div>'
+        +'<div class="report-bar-wrap"><div class="report-bar-label"><span style="color:var(--green)">✅ Cobrado total</span><span style="font-family:var(--mono);font-weight:700;color:var(--green)">S/ '+totalCob.toFixed(2)+'</span></div><div class="report-bar"><div class="report-bar-fill" style="width:'+(totalPrecio?Math.round(totalCob/totalPrecio*100):0)+'%;background:var(--green)"></div></div></div>'
+      +'</div>'
+      // Métodos de pago
+      +'<div class="section-wrap" style="margin-bottom:0">'
+        +'<div class="section-wrap-title">Métodos de pago</div>'
+        +'<div class="report-bar-wrap"><div class="report-bar-label"><span>💵 Efectivo</span><span style="font-family:var(--mono);font-weight:700">S/ '+mEf.toFixed(2)+' ('+pEf+'%)</span></div><div class="report-bar"><div class="report-bar-fill" style="width:'+pEf+'%;background:var(--green)"></div></div></div>'
+        +'<div class="report-bar-wrap"><div class="report-bar-label"><span>💜 Yape / Transfer.</span><span style="font-family:var(--mono);font-weight:700">S/ '+mYp.toFixed(2)+' ('+pYp+'%)</span></div><div class="report-bar"><div class="report-bar-fill" style="width:'+pYp+'%;background:var(--purple)"></div></div></div>'
+        +'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text2)">Total cobros cerrados</span><span style="font-family:var(--mono);font-weight:700;color:var(--text)">S/ '+totalMet.toFixed(2)+'</span></div>'
+      +'</div>'
+      // Tipo de cliente
+      +'<div class="section-wrap" style="margin-bottom:0">'
+        +'<div class="section-wrap-title">Tipo de cliente</div>'
+        +'<div class="report-bar-wrap"><div class="report-bar-label"><span>👤 Clientes directos</span><span style="font-family:var(--mono);font-weight:700">'+cntCliente+'</span></div><div class="report-bar"><div class="report-bar-fill" style="width:'+(c.length?Math.round(cntCliente/c.length*100):0)+'%;background:var(--cyan)"></div></div></div>'
+        +'<div class="report-bar-wrap"><div class="report-bar-label"><span>🏪 PDV / Negocios</span><span style="font-family:var(--mono);font-weight:700">'+cntPDV+'</span></div><div class="report-bar"><div class="report-bar-fill" style="width:'+(c.length?Math.round(cntPDV/c.length*100):0)+'%;background:var(--amber)"></div></div></div>'
+        +'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">'
+          +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:var(--text2)">✅ Entregados</span><span style="font-family:var(--mono);font-weight:700;color:var(--green)">'+cntEntregado+'</span></div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:var(--text2)">🔧 En proceso</span><span style="font-family:var(--mono);font-weight:700;color:#00b4ff">'+cntProceso+'</span></div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text2)">⏳ Pendientes</span><span style="font-family:var(--mono);font-weight:700;color:var(--amber)">'+cntPendiente+'</span></div>'
+        +'</div>'
+      +'</div>'
+    +'</div>'
+    // ── Tabla detallada ──
+    +'<div class="table-wrap" style="flex:1;min-height:0">'
+      +'<div class="table-top" style="padding:8px 12px;flex-shrink:0">'
+        +'<span style="font-size:11px;font-weight:700">Detalle financiero — '+titulo+'</span>'
+        +'<span style="font-size:11px;color:var(--text2);margin-left:auto">'+c.length+' registros</span>'
+      +'</div>'
+      +'<div class="table-scroll"><table><thead><tr>'
+        +'<th>ID</th><th>Cliente</th><th>Equipo</th><th>Estado</th>'
+        +'<th style="text-align:right">Precio</th><th style="text-align:right">Adelanto</th>'
+        +'<th style="text-align:right">Saldo</th><th style="text-align:right">Cobrado</th>'
+        +'<th>Método</th><th>Fecha</th>'
+      +'</tr></thead><tbody>'+rows+'</tbody>'
+      +'<tfoot><tr style="background:var(--surface3);font-weight:700">'
+        +'<td colspan="4" style="padding:8px 10px;font-size:11px;color:var(--text2)">TOTALES</td>'
+        +'<td style="padding:8px 10px;font-family:var(--mono);color:var(--purple);text-align:right">S/ '+totalPrecio.toFixed(2)+'</td>'
+        +'<td style="padding:8px 10px;font-family:var(--mono);color:var(--cyan);text-align:right">S/ '+totalAdelanto.toFixed(2)+'</td>'
+        +'<td style="padding:8px 10px;font-family:var(--mono);color:var(--red);text-align:right">S/ '+totalPorCobrar.toFixed(2)+'</td>'
+        +'<td style="padding:8px 10px;font-family:var(--mono);color:var(--green);text-align:right">S/ '+totalCob.toFixed(2)+'</td>'
+        +'<td colspan="2"></td>'
+      +'</tr></tfoot>'
+      +'</table></div>'
+    +'</div>';
+  repDataActual[containerId] = c;
+}
+function renderReportes() {
+  const todos = getClientes();
+  buildRepContent('rep-todos',   todos, 'Todos los registros');
+  buildRepContent('rep-diario',  filtrarPorPeriodo(todos,'diario'),  'Hoy '+today());
+  buildRepContent('rep-semanal', filtrarPorPeriodo(todos,'semanal'), 'Esta semana');
+  buildRepContent('rep-mensual', filtrarPorPeriodo(todos,'mensual'), 'Este mes');
+  // Asegurar que la sección main activa se vea correctamente
+  cambiarRepMain(repMainActivo);
+}
+function exportarRepActivo(fmt) {
+  const map={todos:'rep-todos',diario:'rep-diario',semanal:'rep-semanal',mensual:'rep-mensual'};
+  const c=repDataActual[map[repTabActivo]]||getClientes();
+  if (fmt==='csv') {
+    let csv='ID,Nombre,Tipo,Equipo,Modelo,Estado,Precio,Cobrado,Fecha\n';
+    c.forEach(x=>{csv+=x.id+',"'+x.nombre+'","'+(x.tipoCliente||'cli')+'","'+(x.equipo||'')+'","'+(x.modelo||'')+'","'+x.estado+'","'+parseFloat(x.precio||0).toFixed(2)+'","'+getCobrado(x).toFixed(2)+'","'+(x.fecha||'')+'"\n';});
+    descargar(csv,'text/csv','reporte_ronnigsm_'+repTabActivo+'_'+today()+'.csv');
+  } else {
+    let txt='=== RONNI GSM - REPORTE '+repTabActivo.toUpperCase()+' ===\nGenerado: '+new Date().toLocaleString('es-PE')+'\n\n';
+    c.forEach(x=>{txt+='['+x.id+'] '+x.nombre+' | '+x.equipo+' '+x.modelo+' | '+x.estado+' | S/ '+x.precio+' | '+x.fecha+'\n';});
+    descargar(txt,'text/plain','reporte_ronnigsm_'+repTabActivo+'_'+today()+'.txt');
+  }
+  toast('Exportado','ok');
+}
+function exportarCSV() { exportarRepActivo('csv'); }
+
+// ── REPORTE INGRESOS ──
+function abrirReporteIngresos() { openModal('ingresos'); filtrarIngresos('todos',document.getElementById('fi-todos')); }
+function filtrarIngresos(periodo, btnEl) {
+  ingPeriodoActual = periodo;
+  ['fi-todos','fi-hoy','fi-semana','fi-mes'].forEach(id=>{const b=document.getElementById(id);if(b)b.className='btn btn-ghost btn-sm';});
+  if(btnEl) btnEl.className='btn btn-primary btn-sm';
+  ingDataActual = filtrarPorPeriodo(getClientes(), periodo);
+  renderTablaIngresos(ingDataActual);
+}
+function renderTablaIngresos(c) {
+  let total=0,cobrado=0,efectivo=0,yape=0;
+  c.forEach(x=>{total+=parseFloat(x.precio||0);cobrado+=getCobrado(x);efectivo+=getEfectivo(x);yape+=getYape(x);});
+  document.getElementById('ing-total').textContent     = 'S/ '+total.toFixed(2);
+  document.getElementById('ing-cobrado').textContent   = 'S/ '+cobrado.toFixed(2);
+  document.getElementById('ing-pendiente').textContent = 'S/ '+(total-cobrado).toFixed(2);
+  document.getElementById('ing-count').textContent     = c.length;
+  const ef=document.getElementById('ing-efectivo'); if(ef) ef.textContent='S/ '+efectivo.toFixed(2);
+  const yp=document.getElementById('ing-yape');     if(yp) yp.textContent='S/ '+yape.toFixed(2);
+  const tbody=document.getElementById('ing-tbody');
+  tbody.innerHTML='';
+  if (!c.length) { tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:20px">Sin registros para este período</td></tr>'; return; }
+  c.forEach(x=>{
+    const precio=parseFloat(x.precio||0), cob=getCobrado(x), saldo=precio-cob;
+    const tr=document.createElement('tr');
+    tr.style.cssText='border-top:1px solid var(--border);cursor:pointer';
+    tr.onmouseenter=()=>tr.style.background='var(--surface2)';
+    tr.onmouseleave=()=>tr.style.background='';
+    tr.onclick=()=>{closeModal('ingresos');verFicha(x.id);};
+    const tipob=x.tipoCliente==='pdv'?'<span style="font-size:9px;background:var(--orange-dim);color:var(--orange);border-radius:4px;padding:1px 5px;font-weight:700;margin-left:4px">PDV</span>':'';
+    tr.innerHTML=
+      '<td style="padding:8px 10px"><span class="id-chip">'+x.id+'</span></td>'+
+      '<td style="padding:8px 10px;font-size:12px">'+x.nombre+tipob+'</td>'+
+      '<td style="padding:8px 10px;font-size:11px;color:var(--text2)">'+(x.equipo||'')+' '+(x.modelo||'')+'</td>'+
+      '<td style="padding:8px 10px;font-size:11px;color:var(--text2)">'+(x.servicio||'—')+'</td>'+
+      '<td style="padding:8px 10px">'+badgeHTML(x.estado)+'</td>'+
+      '<td style="padding:8px 10px">'+metodoBadge(x.metodoPago)+'</td>'+
+      '<td style="padding:8px 10px;text-align:right;font-family:var(--mono);font-weight:600;color:var(--purple)">S/ '+precio.toFixed(2)+'</td>'+
+      '<td style="padding:8px 10px;text-align:right;font-family:var(--mono);color:var(--green)">S/ '+cob.toFixed(2)+'</td>'+
+      '<td style="padding:8px 10px;text-align:right;font-family:var(--mono);font-weight:600;color:'+(saldo>0?'var(--amber)':'var(--green)')+'">S/ '+saldo.toFixed(2)+'</td>'+
+      '<td style="padding:8px 10px;font-size:11px;color:var(--text2)">'+(x.fechaEntrega||x.fecha||'')+'</td>';
+    tbody.appendChild(tr);
+  });
+}
+function exportarIngresos(fmt) {
+  const c=ingDataActual, periodo=ingPeriodoActual;
+  let tot=0,cob=0,ef=0,yp=0;
+  c.forEach(x=>{tot+=parseFloat(x.precio||0);cob+=getCobrado(x);ef+=getEfectivo(x);yp+=getYape(x);});
+  if (fmt==='csv') {
+    let csv='ID,Cliente,Tipo,Equipo,Modelo,Servicio,Estado,MetodoPago,Precio,Cobrado,Saldo,FechaIngreso,FechaEntrega\n';
+    c.forEach(x=>{const p=parseFloat(x.precio||0),c2=getCobrado(x);csv+=x.id+',"'+x.nombre+'","'+(x.tipoCliente||'cli')+'","'+(x.equipo||'')+'","'+(x.modelo||'')+'","'+(x.servicio||'')+'","'+x.estado+'","'+(x.metodoPago||'')+'","'+p.toFixed(2)+'","'+c2.toFixed(2)+'","'+(p-c2).toFixed(2)+'","'+(x.fecha||'')+'","'+(x.fechaEntrega||'')+'"\n';});
+    descargar(csv,'text/csv','ingresos_ronnigsm_'+periodo+'_'+today()+'.csv');
+  } else {
+    let txt='=== RONNI GSM - INGRESOS '+periodo.toUpperCase()+' ===\nGenerado: '+new Date().toLocaleString('es-PE')+'\n';
+    txt+='─'.repeat(42)+'\nFacturación: S/ '+tot.toFixed(2)+'\nCobrado: S/ '+cob.toFixed(2)+'\nPor cobrar: S/ '+(tot-cob).toFixed(2)+'\nEfectivo: S/ '+ef.toFixed(2)+'\nYape/Trans: S/ '+yp.toFixed(2)+'\n'+'─'.repeat(42)+'\n';
+    c.forEach(x=>{const p=parseFloat(x.precio||0),c2=getCobrado(x);txt+='['+x.id+'] '+x.nombre+' | '+x.equipo+' '+x.modelo+' | '+x.estado+' | '+(x.metodoPago||'—')+' | S/ '+p.toFixed(2)+' | Cobrado: S/ '+c2.toFixed(2)+' | '+(x.fecha||'')+'\n';});
+    descargar(txt,'text/plain','ingresos_ronnigsm_'+periodo+'_'+today()+'.txt');
+  }
+  toast('Exportado','ok');
+}
+
+// ── CIERRE DÍA ──
+function cerrarDia() {
+  const todos = getClientes();
+  const hoy   = diaOperativo();
+  // Recibidos hoy = ingresados con fecha de hoy
+  const recibidos  = todos.filter(x => x.fecha === hoy);
+  // Entregados hoy = fechaEntrega de hoy O entregados sin fechaEntrega pero fecha hoy
+  const entregados = todos.filter(x =>
+    x.fechaEntrega === hoy ||
+    (x.estado === 'Entregado' && x.fecha === hoy && !x.fechaEntrega)
+  );
+  // Garantías hoy
+  const garantias  = todos.filter(x => x.estado === 'Garantía' && x.fechaEntrega === hoy);
+  // Pendientes arrastrados de días anteriores (no cobrados)
+  const arrastrados = todos.filter(x =>
+    x.fecha !== hoy &&
+    (x.estado === 'Pendiente' || x.estado === 'En proceso' || x.estado === 'Listo')
+  );
+  let ef=0, yp=0, totalCob=0;
+  entregados.forEach(x => { ef+=getEfectivo(x); yp+=getYape(x); totalCob+=getCobrado(x); });
+  // Egresos del día
+  const egresosHoy = filtrarEgresosPorPeriodo(getEgresos(),'diario');
+  let totalEgr=0; egresosHoy.forEach(x=>totalEgr+=parseFloat(x.monto||0));
+  const neto = totalCob - totalEgr;
+  const sep = '─'.repeat(46);
+  const lineas = [
+    '╔════════════════════════════════════════════╗',
+    '║       RONNI GSM — CIERRE DEL DÍA          ║',
+    '╚════════════════════════════════════════════╝',
+    'Fecha    : ' + hoy,
+    'Hora     : ' + hora(),
+    sep,
+    'MOVIMIENTOS DEL DÍA',
+    '  Equipos recibidos hoy  : ' + recibidos.length,
+    '  Equipos entregados hoy : ' + entregados.length,
+    '  Garantías del día      : ' + garantias.length,
+    sep,
+    'PENDIENTES ARRASTRADOS (días anteriores)',
+    '  Equipos sin cobrar     : ' + arrastrados.length,
+    ...(arrastrados.length
+      ? arrastrados.map(x => '    ⏳ ['+x.id+'] '+x.nombre+' | '+x.estado+' | S/ '+parseFloat(x.precio||0).toFixed(2)+' | desde '+x.fecha)
+      : ['    (ninguno)']),
+    sep,
+    'COBROS DEL DÍA',
+    '  💵 Efectivo             : S/ ' + ef.toFixed(2),
+    '  💜 Yape / Transferencia : S/ ' + yp.toFixed(2),
+    '  ' + sep,
+    '  ✅ TOTAL COBRADO        : S/ ' + totalCob.toFixed(2),
+    sep,
+    'EGRESOS DEL DÍA',
+    ...(egresosHoy.length
+      ? egresosHoy.map(x=>'  💸 '+x.desc+' ('+( CAT_LABELS[x.categoria]||x.categoria)+') : S/ '+parseFloat(x.monto).toFixed(2))
+      : ['  (sin gastos registrados)']),
+    '  ' + sep,
+    '  🔴 TOTAL EGRESOS        : S/ ' + totalEgr.toFixed(2),
+    sep,
+    '  💰 NETO DEL DÍA         : S/ ' + neto.toFixed(2) + (neto<0?' ⚠️':''),
+    sep,
+    'DETALLE ENTREGAS:',
+    ...(entregados.length
+      ? entregados.map(x => '  ['+x.id+'] '+x.nombre+' | '+x.equipo+' '+x.modelo+' | S/ '+getCobrado(x).toFixed(2)+' | '+(x.metodoPago||'—'))
+      : ['  Sin entregas hoy.']),
+    sep,
+    '     Ronni GSM · ' + new Date().toLocaleString('es-PE'),
+    '══════════════════════════════════════════════'
+  ];
+  document.getElementById('cierre-dia-preview').textContent = lineas.join('\n');
+  openModal('cierre-dia');
+}
+function exportarCierreDia() {
+  const txt=document.getElementById('cierre-dia-preview').textContent;
+  descargar(txt,'text/plain','cierre_dia_ronnigsm_'+today()+'.txt');
+  toast('Cierre exportado','ok');
+}
+
+// ── HISTORIAL PDV ──
+function abrirListaPDVs() { verHistorialPDV(null); }
+
+function toggleNuevoPDVForm() {
+  const form = document.getElementById('nuevo-pdv-form');
+  if (!form) return;
+  const visible = form.style.display !== 'none';
+  form.style.display = visible ? 'none' : 'block';
+  if (!visible) setTimeout(()=>{ const inp=document.getElementById('nuevo-pdv-nombre'); if(inp) inp.focus(); },50);
+  else { const inp=document.getElementById('nuevo-pdv-nombre'); if(inp) inp.value=''; }
+}
+
+function crearNuevoPDV() {
+  const inp = document.getElementById('nuevo-pdv-nombre');
+  if (!inp) return;
+  const nombre = inp.value.trim();
+  if (!nombre) { toast('Escribe el nombre del PDV','err'); inp.focus(); return; }
+  const pdvs = getPDVs();
+  const existe = pdvs.find(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+  if (existe) { toast('Ya existe un PDV con ese nombre','err'); return; }
+  const nuevo = {id: nextPdvId(), nombre, creado: today()};
+  pdvs.push(nuevo);
+  savePDVs(pdvs);
+  updateBadges();
+  // Actualizar selector del modal
+  const sel = document.getElementById('pdv-hist-sel');
+  if (sel) {
+    const opt = document.createElement('option');
+    opt.value = nuevo.id; opt.textContent = nuevo.nombre; opt.selected = true;
+    sel.appendChild(opt);
+  }
+  inp.value = '';
+  toggleNuevoPDVForm();
+  cargarHistorialPDV(nuevo.id);
+  toast('PDV creado: ' + nuevo.nombre, 'ok');
+}
+function verHistorialPDV(pdvId) {
+  const sel=document.getElementById('pdv-hist-sel');
+  sel.innerHTML='<option value="">— Seleccionar PDV —</option>';
+  getPDVs().forEach(p=>{
+    const o=document.createElement('option');
+    o.value=p.id; o.textContent=p.nombre;
+    if(pdvId&&p.id===pdvId) o.selected=true;
+    sel.appendChild(o);
+  });
+  openModal('pdv-historial');
+  if(pdvId) cargarHistorialPDV(pdvId);
+  else document.getElementById('pdv-hist-titulo').textContent='Historial PDV';
+}
+function cargarHistorialPDV(pdvId) {
+  if(!pdvId) return;
+  const pdv=getPDVById(pdvId);
+  document.getElementById('pdv-hist-titulo').textContent='🏪 '+(pdv?pdv.nombre:pdvId);
+  const trabajos=getClientes().filter(c=>c.pdvId===pdvId);
+  let total=0,cobrado=0;
+  trabajos.forEach(x=>{total+=parseFloat(x.precio||0);cobrado+=getCobrado(x);});
+  document.getElementById('pdv-stat-total').textContent   = trabajos.length;
+  document.getElementById('pdv-stat-factura').textContent = 'S/ '+total.toFixed(2);
+  document.getElementById('pdv-stat-cobrado').textContent = 'S/ '+cobrado.toFixed(2);
+  document.getElementById('pdv-stat-pend').textContent    = 'S/ '+(total-cobrado).toFixed(2);
+  document.getElementById('pdv-hist-stats').style.display = 'block';
+  const tbody=document.getElementById('pdv-hist-tbody');
+  tbody.innerHTML='';
+  if(!trabajos.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">Sin trabajos registrados para este PDV</td></tr>';return;}
+  trabajos.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).forEach(x=>{
+    const cob=getCobrado(x),saldo=parseFloat(x.precio||0)-cob;
+    const tr=document.createElement('tr');
+    tr.style.cssText='border-top:1px solid var(--border);cursor:pointer';
+    tr.onmouseenter=()=>tr.style.background='var(--surface2)';
+    tr.onmouseleave=()=>tr.style.background='';
+    tr.onclick=()=>{closeModal('pdv-historial');verFicha(x.id);};
+    tr.innerHTML=
+      '<td style="padding:8px 10px"><span class="id-chip">'+x.id+'</span></td>'+
+      '<td style="padding:8px 10px;font-size:12px">'+x.nombre+'</td>'+
+      '<td style="padding:8px 10px;font-size:11px;color:var(--text2)">'+(x.equipo||'')+' '+(x.modelo||'')+'</td>'+
+      '<td style="padding:8px 10px;font-size:11px;color:var(--text2)">'+(x.servicio||'—')+'</td>'+
+      '<td style="padding:8px 10px">'+badgeHTML(x.estado)+'</td>'+
+      '<td style="padding:8px 10px;text-align:right;font-family:var(--mono);color:var(--purple)">S/ '+parseFloat(x.precio||0).toFixed(2)+'</td>'+
+      '<td style="padding:8px 10px;text-align:right;font-family:var(--mono);color:var(--green)">S/ '+cob.toFixed(2)+'</td>'+
+      '<td style="padding:8px 10px;font-size:11px;color:var(--text2)">'+(x.fecha||'')+'</td>';
+    tbody.appendChild(tr);
+  });
+  window._pdvHistData={pdv:pdv||{id:pdvId,nombre:pdvId},trabajos};
+}
+function exportarHistorialPDV(fmt) {
+  const d=window._pdvHistData; if(!d){toast('Selecciona un PDV','err');return;}
+  const {pdv,trabajos}=d;
+  if(fmt==='csv'){
+    let csv='ID,Contacto,Equipo,Modelo,Servicio,Estado,Precio,Cobrado,Saldo,Fecha\n';
+    trabajos.forEach(x=>{const p=parseFloat(x.precio||0),c=getCobrado(x);csv+=x.id+',"'+x.nombre+'","'+(x.equipo||'')+'","'+(x.modelo||'')+'","'+(x.servicio||'')+'","'+x.estado+'","'+p.toFixed(2)+'","'+c.toFixed(2)+'","'+(p-c).toFixed(2)+'","'+(x.fecha||'')+'"\n';});
+    descargar(csv,'text/csv','historial_'+pdv.nombre.replace(/\s+/g,'_')+'_'+today()+'.csv');
+  } else {
+    let tot=0,cob=0; trabajos.forEach(x=>{tot+=parseFloat(x.precio||0);cob+=getCobrado(x);});
+    let txt='=== RONNI GSM - HISTORIAL PDV ===\nPDV: '+pdv.nombre+' ('+pdv.id+')\nGenerado: '+new Date().toLocaleString('es-PE')+'\n'+'─'.repeat(44)+'\n';
+    txt+='Trabajos: '+trabajos.length+' | Facturado: S/ '+tot.toFixed(2)+' | Cobrado: S/ '+cob.toFixed(2)+' | Pendiente: S/ '+(tot-cob).toFixed(2)+'\n'+'─'.repeat(44)+'\n';
+    trabajos.forEach(x=>{const c=getCobrado(x);txt+='['+x.id+'] '+x.nombre+' | '+x.equipo+' '+x.modelo+' | '+x.estado+' | S/ '+parseFloat(x.precio||0).toFixed(2)+' | '+x.fecha+'\n';});
+    descargar(txt,'text/plain','historial_'+pdv.nombre.replace(/\s+/g,'_')+'_'+today()+'.txt');
+  }
+  toast('Exportado','ok');
+}
+
+// ── IMPRESORA ──
+function updatePrintUI() {
+  const t=document.getElementById('print-tipo').value;
+  document.getElementById('print-usb-conf').style.display=t==='usb'?'block':'none';
+  document.getElementById('print-red-conf').style.display=t==='red'?'block':'none';
+}
+function poblarPrintSelect() {
+  const sel=document.getElementById('print-cliente-sel');
+  const q=(document.getElementById('print-search').value||'').toLowerCase();
+  const c=getClientes().filter(x=>!q||(x.nombre+x.id).toLowerCase().includes(q));
+  sel.innerHTML='';
+  c.forEach(x=>{const o=document.createElement('option');o.value=x.id;o.textContent=x.id+' · '+x.nombre+' · '+x.equipo+' '+x.modelo;sel.appendChild(o);});
+  if(sel.options.length) generarPreview();
+}
+function buscarParaImprimir() { poblarPrintSelect(); }
+function selTipoTicket(t) { tipoTicket=t; generarPreview(); }
+function generarPreview() {
+  const sel=document.getElementById('print-cliente-sel'); if(!sel.value) return;
+  const c=getClientes().find(x=>x.id===sel.value); if(!c) return;
+  document.getElementById('print-preview').textContent=generarTextoTicket(c,tipoTicket);
+  generarQRPanel(c.id);
+}
+function generarTextoTicket(c,tipo) {
+  const ancho=parseInt(document.getElementById('print-ancho')?.value||42)||42;
+  const neg=document.getElementById('print-negocio')?.value||'RONNI GSM';
+  const dir=document.getElementById('print-dir')?.value||'';
+  const footer=document.getElementById('print-footer')?.value||'¡Gracias por su preferencia!';
+  const showImei=document.getElementById('opt-imei')?.checked!==false;
+  const showPrecio=document.getElementById('opt-precio')?.checked!==false;
+  const showLogo=document.getElementById('opt-logo')?.checked!==false;
+  const sep='─'.repeat(ancho);
+  const center=s=>{const p=Math.max(0,Math.floor((ancho-s.length)/2));return ' '.repeat(p)+s;};
+  const row=(l,v)=>{const sp=Math.max(1,ancho-l.length-v.length);return l+' '.repeat(sp)+v;};
+  let t='';
+  if(showLogo){t+=center(neg)+'\n';if(dir)t+=center(dir)+'\n';}
+  t+=sep+'\n';
+  t+=center(tipo==='ingreso'?'*** COMPROBANTE DE INGRESO ***':tipo==='entrega'?'*** TICKET DE ENTREGA ***':'*** PRESUPUESTO ***')+'\n';
+  t+=sep+'\n';
+  t+=row('ID:',c.id)+'\n'+row('Fecha:',c.fecha+(c.hora?' '+c.hora:''))+'\n'+sep+'\n';
+  t+='CLIENTE:\n  '+c.nombre+'\n';if(c.telefono)t+='  Tel: '+c.telefono+'\n';
+  t+=sep+'\n';
+  t+='EQUIPO:\n  '+(c.equipo||'')+(c.modelo?' '+c.modelo:'')+'\n';
+  if(c.color)t+='  Color: '+c.color+'\n';
+  if(showImei&&c.imei)t+='  IMEI: '+c.imei+'\n';
+  if(c.fisico)t+='  Estado: '+c.fisico+'\n';
+  if(c.accesorios)t+='  Accesorios: '+c.accesorios+'\n';
+  t+=sep+'\n';
+  if(c.servicio)t+='Servicio: '+c.servicio+'\n';
+  if(c.problema)t+='Falla: '+c.problema.slice(0,ancho-7)+'\n';
+  if(c.tecnico)t+='Tecnico: '+c.tecnico+'\n';
+  if(showPrecio){
+    t+=sep+'\n';
+    t+=row('Precio estimado:','S/ '+parseFloat(c.precio||0).toFixed(2))+'\n';
+    t+=row('Adelanto:','S/ '+parseFloat(c.adelanto||0).toFixed(2))+'\n';
+    t+=row('Saldo:','S/ '+(parseFloat(c.precio||0)-parseFloat(c.adelanto||0)).toFixed(2))+'\n';
+  }
+  t+=sep+'\n'+'Estado: '+c.estado+'\n';
+  if(tipo==='ingreso')t+='\nFirma cliente: ________________\n';
+  t+=sep+'\n__QR_AQUI__\n'+sep+'\n'+center(footer)+'\n';
+  return t;
+}
+function imprimirTicket() {
+  const texto=document.getElementById('print-preview').textContent;
+  if(!texto||texto.startsWith('Selecciona')){toast('Selecciona un cliente','err');return;}
+  const tipo=document.getElementById('print-tipo').value;
+  if(tipo==='pdf'){descargar(texto,'text/plain','ticket_ronnigsm.txt');toast('Guardado','ok');return;}
+
+  // Obtener el cliente activo para generar su QR
+  const sel=document.getElementById('print-cliente-sel');
+  const clienteId = sel ? sel.value : '';
+  const qrUrl = clienteId ? (LANDING_URL + '/?id=' + encodeURIComponent(clienteId)) : '';
+
+  // Generar QR como dataURL para embeber en la ventana de impresión
+  function abrirVentanaConQR(qrDataUrl) {
+    // Partir el texto en el marcador donde va el QR
+    const partes = texto.split('__QR_AQUI__');
+    const antes  = partes[0] || texto;
+    const despues= partes[1] || '';
+    const qrBloque = qrDataUrl
+      ? `</pre><div style="text-align:center;margin:6px 0 4px">` +
+        `<img src="${qrDataUrl}" width="100" height="100" style="display:block;margin:0 auto 3px">` +
+        `<span style="font-family:Courier New;font-size:9px;color:#333">Escanea para ver el estado de tu equipo</span>` +
+        `</div><pre style="font-family:Courier New;font-size:12px;line-height:1.5;margin:0">`
+      : '\n';
+    const w=window.open('','_blank','width=400,height=680');
+    w.document.write(
+      '<html><head><style>' +
+      'body{margin:8px}' +
+      'pre{font-family:Courier New;font-size:12px;line-height:1.5;white-space:pre;margin:0}' +
+      '@page{margin:6mm}' +
+      '</style></head>' +
+      '<body><pre>' + antes + qrBloque + despues + '</pre></body></html>'
+    );
+    w.document.close();
+    w.focus();
+    setTimeout(()=>{w.print();},400);
+    toast('Enviado a impresora','ok');
+  }
+
+  if (qrUrl) {
+    // Generar QR temporal para capturar su imagen
+    const tmpDiv = document.createElement('div');
+    tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px';
+    document.body.appendChild(tmpDiv);
+    try {
+      const qr = new QRCode(tmpDiv, {text:qrUrl, width:90, height:90, colorDark:'#000', colorLight:'#fff', correctLevel:QRCode.CorrectLevel.M});
+      setTimeout(()=>{
+        const canvas = tmpDiv.querySelector('canvas');
+        const dataUrl = canvas ? canvas.toDataURL('image/png') : '';
+        document.body.removeChild(tmpDiv);
+        abrirVentanaConQR(dataUrl);
+      }, 200);
+    } catch(e) {
+      document.body.removeChild(tmpDiv);
+      abrirVentanaConQR('');
+    }
+  } else {
+    abrirVentanaConQR('');
+  }
+}
+function guardarPDF() {
+  const sel=document.getElementById('print-cliente-sel');
+  const texto=document.getElementById('print-preview').textContent;
+  if(!texto||!sel.value){toast('Selecciona un cliente','err');return;}
+  descargar(texto,'text/plain','ticket_'+sel.value+'.txt');toast('Guardado','ok');
+}
+function testPrinter(){toast('Probando...','info');setTimeout(()=>toast('OK (simulado)','ok'),800);}
+function imprimirCliente(id) {
+  const c=getClientes().find(x=>x.id===id);if(!c)return;
+  _ticketClienteId = id;
+  document.getElementById('modal-ticket-preview').textContent=generarTextoTicket(c,'ingreso');
+  openModal('ticket');
+  setTimeout(()=>generarQRModal(c.id),100);
+}
+
+function imprimirDesdeModal(id) {
+  const c=getClientes().find(x=>x.id===id);if(!c)return;
+  const texto=generarTextoTicket(c,'ingreso');
+  const qrUrl=LANDING_URL+'/?id='+encodeURIComponent(c.id);
+  const tmpDiv=document.createElement('div');
+  tmpDiv.style.cssText='position:absolute;left:-9999px;top:-9999px';
+  document.body.appendChild(tmpDiv);
+
+  function abrirConQR(qrDataUrl) {
+    const partes=texto.split('__QR_AQUI__');
+    const antes=partes[0]||texto;
+    const despues=partes[1]||'';
+    const qrBloque=qrDataUrl
+      ?`</pre><div style="text-align:center;margin:6px 0 4px">` +
+        `<img src="${qrDataUrl}" width="100" height="100" style="display:block;margin:0 auto 3px">` +
+        `<span style="font-family:Courier New;font-size:9px;color:#333">Escanea para ver el estado de tu equipo</span>` +
+        `</div><pre style="font-family:Courier New;font-size:12px;line-height:1.5;margin:0">`
+      :'\n';
+    const w=window.open('','_blank','width=400,height=680');
+    w.document.write(
+      '<html><head><style>' +
+      'body{margin:8px}' +
+      'pre{font-family:Courier New;font-size:12px;line-height:1.5;white-space:pre;margin:0}' +
+      '@page{margin:6mm}' +
+      '</style></head>' +
+      '<body><pre>'+antes+qrBloque+despues+'</pre></body></html>'
+    );
+    w.document.close();w.focus();setTimeout(()=>{w.print();},400);
+    toast('Enviado a impresora','ok');
+  }
+
+  try {
+    new QRCode(tmpDiv,{text:qrUrl,width:100,height:100,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+    setTimeout(()=>{
+      const canvas=tmpDiv.querySelector('canvas');
+      const dataUrl=canvas?canvas.toDataURL('image/png'):'';
+      document.body.removeChild(tmpDiv);
+      abrirConQR(dataUrl);
+    },200);
+  } catch(e) {
+    document.body.removeChild(tmpDiv);
+    abrirConQR('');
+  }
+}
+
+// ── QR ──
+function generarQRModal(id) {
+  const wrap = document.getElementById('qr-modal-wrap');
+  const box  = document.getElementById('qr-modal-box');
+  if (!wrap || !box) return;
+  box.innerHTML = '';
+  const url = LANDING_URL + '/?id=' + encodeURIComponent(id);
+  try {
+    new QRCode(box, {text: url, width: 54, height: 54, colorDark:'#000', colorLight:'#fff', correctLevel: QRCode.CorrectLevel.M});
+    wrap.style.display = 'flex';
+  } catch(e) { console.warn('QR error', e); }
+}
+function generarQRPanel(id) {
+  const wrap = document.getElementById('qr-print-wrap');
+  const box  = document.getElementById('qr-print-box');
+  const link = document.getElementById('qr-print-link');
+  if (!wrap || !box) return;
+  if (!id) { wrap.style.display='none'; return; }
+  box.innerHTML = '';
+  const url = LANDING_URL + '/?id=' + encodeURIComponent(id);
+  try {
+    new QRCode(box, {text: url, width: 64, height: 64, colorDark:'#000', colorLight:'#fff', correctLevel: QRCode.CorrectLevel.M});
+    if (link) { link.href = url; link.textContent = url; }
+    wrap.style.display = 'flex';
+  } catch(e) { console.warn('QR error', e); }
+}
+
+// ── DB ──
+function toggleDB() { setDB(DB_MODE==='local'?'cloud':'local'); }
+function applyDBModeUI() {
+  const mode=DB_MODE;
+  const dp=document.getElementById('db-pill'); if(dp){dp.textContent=mode==='local'?'LOCAL':'NUBE';dp.className='db-pill '+(mode==='local'?'local':'cloud');}
+  const ol=document.getElementById('db-opt-local'); if(ol)ol.classList.toggle('selected',mode==='local');
+  const oc=document.getElementById('db-opt-cloud'); if(oc)oc.classList.toggle('selected',mode==='cloud');
+  const rl=document.getElementById('r-local'); if(rl)rl.checked=mode==='local';
+  const rc=document.getElementById('r-cloud'); if(rc)rc.checked=mode==='cloud';
+  const cc=document.getElementById('cloud-config'); if(cc)cc.style.display=mode==='cloud'?'block':'none';
+}
+function setDB(mode) {
+  DB_MODE=mode; localStorage.setItem('ronni_db_mode',mode);
+  applyDBModeUI(); cargarDatos();
+}
+function testCloud(){toast('Probando backend...','info');fetch(API_URL+'/').then(r=>r.json()).then(d=>toast('✓ '+d.app,'ok')).catch(e=>toast('Error: '+e.message,'err'));}
+function saveCloudConfig(){toast('Guardado','ok');}
+function updateDBInfo() {
+  const c=getClientes();
+  const el=document.getElementById('db-info');
+  if(el)el.innerHTML='Modo: <strong style="color:var(--cyan)">'+DB_MODE.toUpperCase()+'</strong> &nbsp;·&nbsp; Registros: <strong>'+c.length+'</strong> &nbsp;·&nbsp; Tamaño: <strong>'+(JSON.stringify(c).length/1024).toFixed(1)+' KB</strong> &nbsp;·&nbsp; Actualizado: <strong>'+new Date().toLocaleTimeString('es-PE')+'</strong><br><span style="font-size:10px;color:var(--text3)">Backend: '+API_URL+'</span>';
+}
+function exportarJSON(){descargar(JSON.stringify(getClientes(),null,2),'application/json','ronnigsm_backup_'+today()+'.json');toast('JSON exportado','ok');}
+function importarJSON(){document.getElementById('import-file').click();}
+function handleImport(e) {
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{const d=JSON.parse(ev.target.result);if(!Array.isArray(d))throw new Error('Formato inválido');
+      if(!confirm('Importar '+d.length+' registros?'))return;
+      saveClientesLocal(d);_cache=null;toast(d.length+' importados','ok');renderClientes();}
+    catch(ex){toast('Error: '+ex.message,'err');}
+  };r.readAsText(f);
+}
+function limpiarDatos(){if(confirm('¿Eliminar datos demo?')){saveClientesLocal([]);_cache=null;renderClientes();refreshDash();toast('Limpiado','ok');}}
+function borrarTodo(){if(confirm('⚠️ ¿BORRAR TODO?')){localStorage.removeItem('ronni_clientes');localStorage.removeItem('ronni_pdvs');_cache=null;saveClientesLocal([]);renderClientes();refreshDash();toast('BD borrada','ok');}}
+
+// ── UTILS ──
+function descargar(data,type,name){const b=new Blob([data],{type:type+';charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();}
+function toast(msg,type='info'){
+  const wrap=document.getElementById('toasts');
+  const t=document.createElement('div');t.className='toast '+type;
+  t.innerHTML='<span style="font-size:14px">'+({ok:'✓',err:'✕',info:'ℹ'}[type]||'ℹ')+'</span> '+msg;
+  wrap.appendChild(t);
+  setTimeout(()=>{t.style.transition='.3s';t.style.opacity='0';setTimeout(()=>t.remove(),300);},3000);
+}
+
+// ── PWA ──
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('[SW]',err));
+  });
+}
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  setTimeout(()=>{
+    const tb=document.querySelector('.topbar');
+    if(!tb||document.getElementById('btn-instalar'))return;
+    const btn=document.createElement('button');
+    btn.id='btn-instalar';btn.className='topbar-btn';
+    btn.style.cssText='background:var(--green);color:#000;margin-right:4px;font-size:10px;padding:5px 10px';
+    btn.textContent='📲 Instalar App';
+    btn.onclick=()=>{deferredPrompt.prompt();deferredPrompt.userChoice.then(c=>{if(c.outcome==='accepted'){toast('¡App instalada!','ok');btn.remove();}deferredPrompt=null;});};
+    const bn=tb.querySelector('.topbar-btn');if(bn)tb.insertBefore(btn,bn);else tb.appendChild(btn);
+  },3000);
+});
+window.addEventListener('appinstalled',()=>{toast('¡Ronni GSM instalado!','ok');deferredPrompt=null;const b=document.getElementById('btn-instalar');if(b)b.remove();});
+
+// ══════════════════════════════════════════
+//  AUTH & USUARIOS
+// ══════════════════════════════════════════
+let _currentUser = null; // { usuario, rol, nombre, token }
+
+function getToken() { return localStorage.getItem('ronni_token'); }
+function setToken(t) { localStorage.setItem('ronni_token', t); }
+function clearToken()  { localStorage.removeItem('ronni_token'); localStorage.removeItem('ronni_user'); }
+function saveUserLocal(u) { localStorage.setItem('ronni_user', JSON.stringify(u)); }
+function loadUserLocal()  { try { return JSON.parse(localStorage.getItem('ronni_user')||'null'); } catch { return null; } }
+
+async function doLogin() {
+  const usuario  = document.getElementById('login-user').value.trim().toLowerCase();
+  const password = document.getElementById('login-pass').value;
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
+  errEl.style.display = 'none';
+  if (!usuario || !password) { errEl.textContent='Completa todos los campos'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = 'Ingresando...';
+  try {
+    const res = await fetch(API_URL + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario, password }),
+      signal: AbortSignal.timeout(15000)
+    });
+    let data;
+    try { data = await res.json(); } catch(je) { throw new Error('Respuesta inválida del servidor (no es JSON). Verifica que el backend esté actualizado.'); }
+    if (!res.ok) { errEl.textContent = data.error || 'Error al ingresar'; errEl.style.display='block'; return; }
+    setToken(data.token);
+    saveUserLocal({ usuario: data.usuario, rol: data.rol, nombre: data.nombre, token: data.token });
+    _currentUser = { usuario: data.usuario, rol: data.rol, nombre: data.nombre, token: data.token };
+    onLoginSuccess();
+  } catch(e) {
+    errEl.textContent = 'Error: ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Ingresar →';
+  }
+}
+
+async function checkSession() {
+  const token = getToken();
+  if (!token) return false;
+  try {
+    const res = await fetch(API_URL + '/me', {
+      headers:{'Authorization':'Bearer '+token},
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!res.ok) { clearToken(); return false; }
+    const data = await res.json();
+    _currentUser = { ...data, token };
+    saveUserLocal(_currentUser);
+    return true;
+  } catch {
+    const local = loadUserLocal();
+    if (local && local.token === token) { _currentUser = local; return true; }
+    return false;
+  }
+}
+
+function onLoginSuccess() {
+  // Ocultar login overlay
+  const overlay = document.getElementById('login-overlay');
+  if (overlay) overlay.style.display = 'none';
+  // Actualizar chip de usuario
+  updateUserChip();
+  // Aplicar restricciones según rol
+  applyRoleRestrictions();
+  // Forzar modo cloud ya que usamos backend
+  setDB('cloud');
+  // Cargar datos
+  cargarDatos().then(()=>{ setTimeout(poblarPrintSelect,200); renderReportes(); });
+}
+
+function updateUserChip() {
+  if (!_currentUser) return;
+  const av = document.getElementById('sidebar-avatar');
+  const nm = document.getElementById('sidebar-nombre');
+  const rl = document.getElementById('sidebar-rol');
+  if (av) av.textContent = (_currentUser.nombre||'?').charAt(0).toUpperCase();
+  if (nm) nm.textContent = _currentUser.nombre || _currentUser.usuario;
+  if (rl) rl.textContent = _currentUser.rol === 'admin' ? '🛡 Admin' : '🔧 Técnico';
+}
+
+function applyRoleRestrictions() {
+  const esTecnico = _currentUser && _currentUser.rol === 'tecnico';
+
+  // Ocultar elementos solo-admin
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = esTecnico ? 'none' : '';
+  });
+
+  // Técnico: ocultar Config en sidebar
+  const navConfig = document.getElementById('nav-config');
+  if (navConfig) navConfig.style.display = esTecnico ? 'none' : '';
+
+  // Técnico: auto-llenar campo técnico
+  if (esTecnico) {
+    const tecInput = document.getElementById('in-tecnico');
+    if (tecInput) { tecInput.value = _currentUser.nombre; tecInput.readOnly = true; }
+  }
+
+  // Actualizar tooltip del botón logout para que sea visible
+  const logoutBtn = document.querySelector('.user-logout[title="Cerrar sesión"]');
+  if (logoutBtn) {
+    logoutBtn.title = 'Cerrar sesión';
+    logoutBtn.style.color = 'var(--red)';
+    logoutBtn.style.fontSize = '16px';
+  }
+
+  // Mostrar rol en topbar
+  const topbar = document.querySelector('.topbar-title');
+  if (topbar && _currentUser) {
+    topbar.textContent = esTecnico
+      ? '🔧 ' + _currentUser.nombre + ' — Técnico'
+      : '🛡 Admin — Panel Completo';
+  }
+}
+
+// Override de guardarIngreso para auto-asignar técnico
+const _origGuardarIngreso = typeof guardarIngreso === 'function' ? guardarIngreso : null;
+
+function logout() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  const token = getToken();
+  if (token) fetch(API_URL+'/logout',{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}}).catch(()=>{});
+  clearToken();
+  _currentUser = null;
+  location.reload();
+}
+
+function abrirMenuUsuario() {
+  const esTecnico = _currentUser && _currentUser.rol === 'tecnico';
+  // Mostrar mini-menú: cambiar contraseña + (admin: gestión usuarios)
+  const opts = ['🔐 Cambiar contraseña'];
+  if (!esTecnico) opts.push('👥 Gestión de usuarios');
+  const choice = prompt(
+    'Menú de ' + (_currentUser?.nombre||'usuario') + '\n\n' +
+    opts.map((o,i)=>(i+1)+'. '+o).join('\n') + '\n\n0. Cancelar'
+  );
+  if (choice === '1') openModal('cambiar-pass');
+  if (choice === '2' && !esTecnico) abrirGestionUsuarios();
+}
+
+async function cambiarPassword() {
+  const actual   = document.getElementById('cp-actual').value;
+  const nueva    = document.getElementById('cp-nueva').value;
+  const confirm2 = document.getElementById('cp-confirm').value;
+  if (!actual||!nueva) { toast('Completa todos los campos','err'); return; }
+  if (nueva !== confirm2) { toast('Las contraseñas no coinciden','err'); return; }
+  if (nueva.length < 6)  { toast('Mínimo 6 caracteres','err'); return; }
+  try {
+    const res = await apiFetch('/cambiar-password',{
+      method:'POST', body: JSON.stringify({passwordActual:actual, passwordNueva:nueva})
+    });
+    const d = await res.json();
+    if (!res.ok) { toast(d.error||'Error','err'); return; }
+    toast('✅ Contraseña actualizada','ok');
+    closeModal('cambiar-pass');
+    document.getElementById('cp-actual').value='';
+    document.getElementById('cp-nueva').value='';
+    document.getElementById('cp-confirm').value='';
+  } catch(e) { toast('Error: '+e.message,'err'); }
+}
+
+async function abrirGestionUsuarios() {
+  openModal('usuarios');
+  const el = document.getElementById('usuarios-body');
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text2)">Cargando...</div>';
+  try {
+    const res  = await apiFetch('/usuarios');
+    const data = await res.json();
+    el.innerHTML = data.map(u=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:8px">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--cyan-dim);border:1.5px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--cyan);flex-shrink:0">${u.nombre.charAt(0)}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700">${u.nombre} <span style="font-size:10px;color:var(--text3);font-weight:400">@${u.usuario}</span></div>
+          <div style="font-size:10px;color:var(--text3)">${u.rol==='admin'?'🛡 Admin':'🔧 Técnico'} · ${u.activo!==false?'<span style="color:var(--green)">Activo</span>':'<span style="color:var(--red)">Inactivo</span>'}</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="resetPasswordUsuario('${u.usuario}','${u.nombre}')">🔑 Reset pass</button>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div style="color:var(--red);padding:12px">Error: '+e.message+'</div>'; }
+}
+
+async function resetPasswordUsuario(usuario, nombre) {
+  const nueva = prompt('Nueva contraseña para ' + nombre + ' (mínimo 6 caracteres):');
+  if (!nueva || nueva.length < 6) { toast('Contraseña muy corta o cancelado','err'); return; }
+  try {
+    const res = await apiFetch('/usuarios/'+usuario,{
+      method:'PUT', body: JSON.stringify({password: nueva})
+    });
+    const d = await res.json();
+    if (!res.ok) { toast(d.error||'Error','err'); return; }
+    toast('✅ Contraseña de '+nombre+' actualizada','ok');
+  } catch(e) { toast('Error: '+e.message,'err'); }
+}
+
+// Helper para fetch autenticado — más simple y confiable que override global
+function apiFetch(path, opts={}) {
+  const token = getToken();
+  const headers = { 'Content-Type':'application/json', ...(opts.headers||{}) };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  return fetch(API_URL + path, { ...opts, headers });
+}
+
+// Override eliminarFicha para bloquear en técnicos
+const _origEliminarFicha = window.eliminarFicha;
+window.eliminarFicha = function(id) {
+  if (_currentUser && _currentUser.rol === 'tecnico') {
+    toast('Los técnicos no pueden eliminar fichas','err'); return;
+  }
+  if (_origEliminarFicha) _origEliminarFicha(id);
+  else {
+    // fallback inline
+    if(!confirm('¿Eliminar esta ficha?'))return;
+    const c=getClientes().filter(x=>x.id!==id);
+    saveClientesLocal(c);
+    if(DB_MODE==='cloud'){fetch(API_URL+'/clientes/'+id,{method:'DELETE'}).catch(()=>{});}
+    renderClientes();updateBadges();refreshDash();toast('Eliminado','info');
+  }
+};
+
+// Auto-fill técnico en formulario de ingreso cuando es técnico
+function autoFillTecnico() {
+  if (_currentUser && _currentUser.rol === 'tecnico') {
+    const f = document.getElementById('in-tecnico');
+    if (f) { f.value = _currentUser.nombre; f.readOnly = true; }
+  }
+}
+
+// Parchar openModal para auto-fill — sin capturar referencia previa
+const _openModalOrig = openModal;
+openModal = function(id) {
+  _openModalOrig(id);
+  if (id === 'nueva' || id === 'editar') setTimeout(autoFillTecnico, 80);
+};
+
+// ── INIT CON AUTH ──
+applyDBModeUI();
+updatePrintUI();
+const _d=new Date();_d.setDate(_d.getDate()+3);
+const ie=document.getElementById('in-entrega');if(ie)ie.value=_d.toISOString().split('T')[0];
+const df=document.getElementById('dash-fecha');if(df)df.textContent=new Date().toLocaleDateString('es-PE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+// Verificar sesión existente
+(async () => {
+  const valid = await checkSession();
+  if (valid) {
+    onLoginSuccess();
+  }
+  // Si no hay sesión válida, el overlay de login ya está visible
+})();
+</script>
+</body>
+</html>
