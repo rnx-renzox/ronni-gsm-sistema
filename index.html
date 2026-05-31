@@ -1281,6 +1281,14 @@ function saveClientes(arr) {
       ? arr.filter(c => (c.tecnico||'').toLowerCase() === _currentUser.nombre.toLowerCase())
       : arr;
     Promise.all(aGuardar.map(c => saveClienteNube(c)))
+      .then(() => {
+        // Recargar desde Drive para confirmar
+        fetchClientesNube().then(data => {
+          _cache = data;
+          updateBadges();
+          refreshDash();
+        }).catch(()=>{});
+      })
       .catch(e => toast('Error nube: ' + e.message, 'err'));
   } else {
     saveClientesLocal(arr);
@@ -1307,6 +1315,8 @@ async function cargarDatos() {
   try {
     if (DB_MODE === 'cloud') {
       _cache = await fetchClientesNube();
+      // Limpiar localStorage para no mezclar datos
+      localStorage.removeItem('ronni_clientes');
       toast('Conectado · ' + _cache.length + ' equipos en Drive', 'ok');
     } else {
       _cache = null;
@@ -1315,13 +1325,18 @@ async function cargarDatos() {
     updateBadges();
     refreshDash();
   } catch(e) {
-    toast('Sin conexión a la nube: ' + e.message, 'err');
-    DB_MODE = 'local';
-    localStorage.setItem('ronni_db_mode','local');
-    applyDBModeUI();
-    if (!getClientesLocal().length) loadDemoData();
-    updateBadges();
-    refreshDash();
+    if (DB_MODE === 'cloud') {
+      // En modo cloud, NO caer a local — mostrar error y reintentar
+      toast('Error conectando a la nube: ' + e.message + ' — Reintentando...', 'err');
+      _cache = _cache || []; // mantener caché anterior si existe
+      updateBadges();
+      refreshDash();
+      setTimeout(cargarDatos, 10000); // reintentar en 10s
+    } else {
+      if (!getClientesLocal().length) loadDemoData();
+      updateBadges();
+      refreshDash();
+    }
   } finally {
     showLoading(false);
   }
