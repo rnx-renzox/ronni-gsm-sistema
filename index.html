@@ -1353,7 +1353,15 @@ function today() {
 // Los equipos pendientes/listos se mantienen en el dashboard indefinidamente hasta cobro
 function diaOperativo() { return today(); }
 function hora()  { return new Date().toTimeString().slice(0,5); }
-function nextId() {
+async function nextId() {
+  if (DB_MODE === 'cloud') {
+    try {
+      const res = await apiFetch('/next-id');
+      const d   = await res.json();
+      if (d.id) return d.id;
+    } catch(e) { console.warn('nextId fallback local:', e); }
+  }
+  // Fallback local
   const c = getClientes();
   if (!c.length) return 'GSM-001';
   const nums = c.map(x => parseInt((x.id||'').split('-')[1]||0)).filter(n=>!isNaN(n));
@@ -1611,7 +1619,7 @@ function closeModal(id) {
 }
 
 // ── GUARDAR FICHA ──
-function guardarFicha() {
+async function guardarFicha() {
   const nombre = document.getElementById('m-nombre').value.trim();
   if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
   const tipo = tipoClienteActual;
@@ -1639,7 +1647,7 @@ function guardarFicha() {
       toast('Ficha actualizada: ' + c[idx].id, 'ok');
     }
   } else {
-    const id = nextId();
+    const id = await nextId();
     c.unshift({id, nombre,
       telefono: document.getElementById('m-telefono').value.trim(),
       equipo:   document.getElementById('m-equipo').value.trim(),
@@ -1815,14 +1823,14 @@ function validarIMEI(el) {
   el.value = el.value.replace(/\D/g,'');
   el.style.borderColor = el.value.length===0?'var(--border)':el.value.length===15?'var(--green)':'var(--red)';
 }
-function guardarIngreso() {
+async function guardarIngreso() {
   const nombre = document.getElementById('in-nombre').value.trim();
   if (!nombre) { toast('El nombre es obligatorio','err'); return; }
   const equipo = document.getElementById('in-equipo').value;
   if (!equipo) { toast('Selecciona la marca','err'); return; }
   const imei = document.getElementById('in-imei').value.trim();
   if (imei && imei.length !== 15) { toast('IMEI debe tener 15 dígitos','err'); return; }
-  const id = nextId();
+  const id = await nextId();
   const nuevo = {
     id, nombre, telefono:document.getElementById('in-telefono').value.trim(),
     dni:document.getElementById('in-dni').value.trim(),
