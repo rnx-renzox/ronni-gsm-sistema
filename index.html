@@ -1276,7 +1276,11 @@ function saveClientes(arr) {
   if (DB_MODE === 'cloud') {
     _cache = arr;
     updateBadges();
-    Promise.all(arr.map(c => saveClienteNube(c)))
+    // Técnico solo guarda sus propias fichas
+    const aGuardar = (_currentUser && _currentUser.rol === 'tecnico')
+      ? arr.filter(c => (c.tecnico||'').toLowerCase() === _currentUser.nombre.toLowerCase())
+      : arr;
+    Promise.all(aGuardar.map(c => saveClienteNube(c)))
       .catch(e => toast('Error nube: ' + e.message, 'err'));
   } else {
     saveClientesLocal(arr);
