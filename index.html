@@ -2405,69 +2405,153 @@ function exportarIngresos(fmt) {
 // ── CIERRE DÍA ──
 function cerrarDia() {
   const todos = getClientes();
-  const hoy   = diaOperativo();
-  // Recibidos hoy = ingresados con fecha de hoy
-  const recibidos  = todos.filter(x => x.fecha === hoy);
-  // Entregados hoy = fechaEntrega de hoy O entregados sin fechaEntrega pero fecha hoy
-  const entregados = todos.filter(x =>
+
+  // ── Fecha operativa en GMT-5 (Perú) ──
+  // Usamos el reloj local del dispositivo (ya configurado en GMT-5 en Perú)
+  const ahora   = new Date();
+  const hoy     = today(); // yyyy-mm-dd local
+  const horaStr = ahora.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
+  const fechaLegible = ahora.toLocaleDateString('es-PE', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+  // ── Clasificación de equipos ──
+  // Recibidos hoy (ingresaron hoy)
+  const recibidosHoy = todos.filter(x => x.fecha === hoy);
+
+  // Entregados hoy (cobro cerrado hoy)
+  const entregadosHoy = todos.filter(x =>
     x.fechaEntrega === hoy ||
     (x.estado === 'Entregado' && x.fecha === hoy && !x.fechaEntrega)
   );
-  // Garantías hoy
-  const garantias  = todos.filter(x => x.estado === 'Garantía' && x.fechaEntrega === hoy);
-  // Pendientes arrastrados de días anteriores (no cobrados)
-  const arrastrados = todos.filter(x =>
-    x.fecha !== hoy &&
+
+  // Pendientes del día (ingresaron hoy pero aún sin cobrar)
+  const pendientesHoy = todos.filter(x =>
+    x.fecha === hoy &&
     (x.estado === 'Pendiente' || x.estado === 'En proceso' || x.estado === 'Listo')
   );
+
+  // Arrastrados (ingresaron en días anteriores y siguen sin cobrar)
+  const arrastrados = todos.filter(x =>
+    x.fecha < hoy &&
+    (x.estado === 'Pendiente' || x.estado === 'En proceso' || x.estado === 'Listo')
+  );
+
+  // Garantías del día
+  const garantias = todos.filter(x => x.estado === 'Garantía' && x.fechaEntrega === hoy);
+
+  // ── Cobros del día (SOLO entregados con cobro cerrado) ──
   let ef=0, yp=0, totalCob=0;
-  entregados.forEach(x => { ef+=getEfectivo(x); yp+=getYape(x); totalCob+=getCobrado(x); });
-  // Egresos del día
-  const egresosHoy = filtrarEgresosPorPeriodo(getEgresos(),'diario');
-  let totalEgr=0; egresosHoy.forEach(x=>totalEgr+=parseFloat(x.monto||0));
-  const neto = totalCob - totalEgr;
-  const sep = '─'.repeat(46);
+  entregadosHoy.forEach(x => {
+    ef  += getEfectivo(x);
+    yp  += getYape(x);
+    totalCob += getCobrado(x);
+  });
+
+  // Adelantos recibidos hoy (de equipos no entregados aún)
+  let totalAdelantos = 0;
+  pendientesHoy.forEach(x => { totalAdelantos += parseFloat(x.adelanto||0); });
+
+  // ── Egresos del día ──
+  const egresosHoy = filtrarEgresosPorPeriodo(getEgresos(), 'diario');
+  let totalEgr = 0;
+  egresosHoy.forEach(x => totalEgr += parseFloat(x.monto||0));
+
+  // ── Neto real del día (cobros cerrados + adelantos - egresos) ──
+  const totalIngreso = totalCob + totalAdelantos;
+  const neto = totalIngreso - totalEgr;
+
+  const sep  = '─'.repeat(46);
+  const sep2 = '━'.repeat(46);
+
   const lineas = [
     '╔════════════════════════════════════════════╗',
     '║       RONNI GSM — CIERRE DEL DÍA          ║',
     '╚════════════════════════════════════════════╝',
-    'Fecha    : ' + hoy,
-    'Hora     : ' + hora(),
+    'Fecha  : ' + fechaLegible,
+    'Hora   : ' + horaStr + ' (GMT-5 Perú)',
     sep,
+
+    // ── MOVIMIENTOS ──
     'MOVIMIENTOS DEL DÍA',
-    '  Equipos recibidos hoy  : ' + recibidos.length,
-    '  Equipos entregados hoy : ' + entregados.length,
-    '  Garantías del día      : ' + garantias.length,
+    '  📥 Equipos recibidos   : ' + recibidosHoy.length,
+    '  ✅ Equipos entregados  : ' + entregadosHoy.length,
+    '  🔧 Pendientes del día  : ' + pendientesHoy.length,
+    '  🛡  Garantías          : ' + garantias.length,
     sep,
-    'PENDIENTES ARRASTRADOS (días anteriores)',
-    '  Equipos sin cobrar     : ' + arrastrados.length,
+
+    // ── PENDIENTES DEL DÍA (ingresaron hoy, aún sin cobrar) ──
+    'PENDIENTES DEL DÍA (sin cobrar aún)',
+    ...(pendientesHoy.length
+      ? pendientesHoy.map(x =>
+          '  🔸 ['+x.id+'] '+x.nombre+
+          ' | '+x.estado+
+          ' | Precio: S/ '+parseFloat(x.precio||0).toFixed(2)+
+          (parseFloat(x.adelanto||0)>0 ? ' | Adelanto: S/ '+parseFloat(x.adelanto||0).toFixed(2) : '')+
+          ' | Saldo: S/ '+(parseFloat(x.precio||0)-parseFloat(x.adelanto||0)).toFixed(2)
+        )
+      : ['  (ninguno)']),
+    sep,
+
+    // ── ARRASTRADOS ──
+    'ARRASTRADOS (días anteriores sin cobrar)',
+    '  Total equipos          : ' + arrastrados.length,
     ...(arrastrados.length
-      ? arrastrados.map(x => '    ⏳ ['+x.id+'] '+x.nombre+' | '+x.estado+' | S/ '+parseFloat(x.precio||0).toFixed(2)+' | desde '+x.fecha)
-      : ['    (ninguno)']),
+      ? arrastrados.map(x =>
+          '  ⏳ ['+x.id+'] '+x.nombre+
+          ' | '+x.estado+
+          ' | S/ '+parseFloat(x.precio||0).toFixed(2)+
+          ' | desde '+x.fecha
+        )
+      : ['  (ninguno)']),
     sep,
-    'COBROS DEL DÍA',
+
+    // ── COBROS DEL DÍA ──
+    'COBROS DEL DÍA (entregas cerradas)',
     '  💵 Efectivo             : S/ ' + ef.toFixed(2),
     '  💜 Yape / Transferencia : S/ ' + yp.toFixed(2),
     '  ' + sep,
-    '  ✅ TOTAL COBRADO        : S/ ' + totalCob.toFixed(2),
+    '  ✅ SUBTOTAL COBROS      : S/ ' + totalCob.toFixed(2),
+    '',
+    'ADELANTOS RECIBIDOS HOY',
+    '  💰 Adelantos (sin cerrar): S/ ' + totalAdelantos.toFixed(2),
+    '  ' + sep,
+    '  📊 TOTAL INGRESADO      : S/ ' + totalIngreso.toFixed(2),
     sep,
+
+    // ── EGRESOS ──
     'EGRESOS DEL DÍA',
     ...(egresosHoy.length
-      ? egresosHoy.map(x=>'  💸 '+x.desc+' ('+( CAT_LABELS[x.categoria]||x.categoria)+') : S/ '+parseFloat(x.monto).toFixed(2))
+      ? egresosHoy.map(x =>
+          '  💸 '+x.desc+
+          ' ('+( CAT_LABELS[x.categoria]||x.categoria)+')'+
+          ' : S/ '+parseFloat(x.monto).toFixed(2)
+        )
       : ['  (sin gastos registrados)']),
     '  ' + sep,
     '  🔴 TOTAL EGRESOS        : S/ ' + totalEgr.toFixed(2),
-    sep,
-    '  💰 NETO DEL DÍA         : S/ ' + neto.toFixed(2) + (neto<0?' ⚠️':''),
-    sep,
-    'DETALLE ENTREGAS:',
-    ...(entregados.length
-      ? entregados.map(x => '  ['+x.id+'] '+x.nombre+' | '+x.equipo+' '+x.modelo+' | S/ '+getCobrado(x).toFixed(2)+' | '+(x.metodoPago||'—'))
+    sep2,
+
+    // ── RESUMEN FINAL ──
+    '  💰 TOTAL INGRESADO      : S/ ' + totalIngreso.toFixed(2),
+    '  🔴 TOTAL EGRESOS        : S/ ' + totalEgr.toFixed(2),
+    '  ' + sep,
+    '  💎 NETO DEL DÍA         : S/ ' + neto.toFixed(2) + (neto < 0 ? '  ⚠️ DÉFICIT' : ''),
+    sep2,
+
+    // ── DETALLE ENTREGAS ──
+    'DETALLE ENTREGAS DEL DÍA',
+    ...(entregadosHoy.length
+      ? entregadosHoy.map(x =>
+          '  ['+x.id+'] '+x.nombre+
+          ' | '+x.equipo+' '+x.modelo+
+          ' | S/ '+getCobrado(x).toFixed(2)+
+          ' | '+(x.metodoPago||'—')
+        )
       : ['  Sin entregas hoy.']),
     sep,
-    '     Ronni GSM · ' + new Date().toLocaleString('es-PE'),
+    '     Ronni GSM · ' + fechaLegible,
     '══════════════════════════════════════════════'
   ];
+
   document.getElementById('cierre-dia-preview').textContent = lineas.join('\n');
   openModal('cierre-dia');
 }
